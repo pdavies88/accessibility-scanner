@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer';
 import { AxePuppeteer } from '@axe-core/puppeteer';
 import { XMLParser } from 'fast-xml-parser';
 import fetch from 'node-fetch';
@@ -30,6 +30,7 @@ export class SitemapScanner {
       limit(async () => {
         const result = await this.scanPage(url);
         results.push(result);
+        // eslint-disable-next-line no-console
         console.log(`Scanned: ${url}`);
         return result;
       })

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ScanReport, AxeViolation } from '@accessibility-scanner/shared';
 import {
   Table,
@@ -7,17 +7,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Badge,
-  Button,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger
-} from '@/components/ui';
+  TabsTrigger,
+} from '@/components/ui/tabs';
 
 interface ViolationsTableProps {
   report: ScanReport;
@@ -53,9 +57,9 @@ export function ViolationsTable({ report }: ViolationsTableProps) {
 
   const impactColors = {
     critical: 'destructive',
-    serious: 'orange',
-    moderate: 'yellow',
-    minor: 'secondary'
+    serious: 'destructive',
+    moderate: 'secondary',
+    minor: 'outline'
   } as const;
 
   return (

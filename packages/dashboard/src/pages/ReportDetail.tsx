@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ScanReport, ScanResult } from '@accessibility-scanner/shared';
+import { ScanReport } from '@accessibility-scanner/shared';
 import { 
   Tabs, 
   TabsContent, 
@@ -12,11 +12,6 @@ import {
   CardHeader,
   CardTitle,
   Button,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Badge,
   Progress
 } from '@/components/ui';
 import { ViolationsTable } from '@/components/ViolationsTable';

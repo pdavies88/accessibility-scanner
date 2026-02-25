@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ScanReport } from '@accessibility-scanner/shared';
@@ -7,12 +6,6 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Badge
 } from '@/components/ui';
 

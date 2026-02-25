@@ -23,10 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Textarea,
-} from '@/components/ui/textarea';
-import { JiraExporter } from '@/lib/jira-exporter';
 
 interface ExportDialogProps {
   open: boolean;
@@ -37,34 +33,65 @@ interface ExportDialogProps {
 export function ExportDialog({ open, onOpenChange, report }: ExportDialogProps) {
   const [selectedViolations, setSelectedViolations] = useState<Set<string>>(new Set());
   const [exportFormat, setExportFormat] = useState<'jira' | 'csv' | 'json'>('jira');
-  const [customTemplate, setCustomTemplate] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
-    const exporter = new JiraExporter();
-    const exports = exporter.exportReport(report, Array.from(selectedViolations));
+    setIsExporting(true);
     
-        if (exportFormat === 'jira') {
-      // Download as JSON for Jira import
-      const blob = new Blob([JSON.stringify(exports, null, 2)], {
-        type: 'application/json'
+    try {
+      // Call the API to get the export data
+      const response = await fetch(`/api/reports/${report.id}/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          selectedViolations: Array.from(selectedViolations),
+          format: exportFormat,
+        })
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `jira-export-${report.id}.json`;
-      a.click();
-    } else if (exportFormat === 'csv') {
-      // Convert to CSV
-      const csv = convertToCSV(exports);
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `accessibility-issues-${report.id}.csv`;
-      a.click();
+
+      const data = await response.json();
+      
+      if (exportFormat === 'jira') {
+        // Download as JSON for Jira import
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: 'application/json'
+        });
+        downloadFile(blob, `jira-export-${report.id}.json`);
+      } else if (exportFormat === 'csv') {
+        // Server returns CSV directly
+        const csvResponse = await fetch(`/api/reports/${report.id}/export/csv`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            selectedViolations: Array.from(selectedViolations)
+          })
+        });
+        
+        const csvData = await csvResponse.text();
+        const blob = new Blob([csvData], { type: 'text/csv' });
+        downloadFile(blob, `accessibility-issues-${report.id}.csv`);
+      }
+      
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      // You might want to show an error toast here
+    } finally {
+      setIsExporting(false);
     }
-    
-    onOpenChange(false);
+  };
+
+  const downloadFile = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const violationTypes = Object.entries(report.summary.violationsByType).map(
@@ -99,7 +126,7 @@ export function ExportDialog({ open, onOpenChange, report }: ExportDialogProps) 
               <div className="flex items-center space-x-2 pb-2 border-b">
                 <Checkbox
                   checked={selectedViolations.size === violationTypes.length}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={(checked: any) => {
                     if (checked) {
                       setSelectedViolations(new Set(violationTypes.map(v => v.type)));
                     } else {
@@ -114,7 +141,7 @@ export function ExportDialog({ open, onOpenChange, report }: ExportDialogProps) 
                 <div key={type} className="flex items-center space-x-2">
                   <Checkbox
                     checked={selectedViolations.has(type)}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={(checked: any) => {
                       const newSet = new Set(selectedViolations);
                       if (checked) {
                         newSet.add(type);
@@ -131,18 +158,6 @@ export function ExportDialog({ open, onOpenChange, report }: ExportDialogProps) 
               ))}
             </div>
           </div>
-
-          {exportFormat === 'jira' && (
-            <div>
-              <Label>Custom Jira Template (Optional)</Label>
-              <Textarea
-                placeholder="Use variables: {{summary}}, {{description}}, {{impact}}, etc."
-                value={customTemplate}
-                onChange={(e) => setCustomTemplate(e.target.value)}
-                rows={4}
-              />
-            </div>
-          )}
         </div>
 
         <DialogFooter>
@@ -151,32 +166,12 @@ export function ExportDialog({ open, onOpenChange, report }: ExportDialogProps) 
           </Button>
           <Button 
             onClick={handleExport}
-            disabled={selectedViolations.size === 0}
+            disabled={selectedViolations.size === 0 || isExporting}
           >
-            Export {selectedViolations.size} Issue Types
+            {isExporting ? 'Exporting...' : `Export ${selectedViolations.size} Issue Types`}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-}
-
-function convertToCSV(data: any[]): string {
-  if (data.length === 0) return '';
-  
-  const headers = Object.keys(data[0]);
-  const csvHeaders = headers.join(',');
-  
-    const csvRows = data.map(row => 
-    headers.map(header => {
-      const value = row[header];
-      // Escape quotes and wrap in quotes if contains comma
-      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-        return `"${value.replace(/"/g, '""')}"`;
-      }
-      return value;
-    }).join(',')
-  );
-  
-  return [csvHeaders, ...csvRows].join('\n');
 }

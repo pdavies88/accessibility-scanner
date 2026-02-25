@@ -28,4 +28,14 @@ program
     await generator.generateReport(report, options.output);
   });
 
+program
+  .command('clear')
+  .description('Wipe all stored scan reports')
+  .action(async () => {
+    const db = new DatabaseService();
+    await db.clearReports();
+    // eslint-disable-next-line no-console
+    console.log('All reports deleted.');
+  });
+
 program.parse();

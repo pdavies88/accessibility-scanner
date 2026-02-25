@@ -90,4 +90,65 @@ Please refer to the help URL above for detailed remediation guidance.
     };
     return mapping[impact] || 'Medium';
   }
+
+exportToCsv(report: ScanReport, selectedViolations?: string[]): string {
+    const rows: string[][] = [];
+    
+    // Headers
+    rows.push([
+      'Issue Type',
+      'Summary',
+      'Description',
+      'Impact',
+      'WCAG Criteria',
+      'Affected Pages',
+      'Occurrences'
+    ]);
+
+    // Group violations by type
+    const violationGroups = new Map<string, {
+      violation: AxeViolation;
+      pages: string[];
+      count: number;
+    }>();
+    
+    report.results.forEach(result => {
+      result.violations
+        .filter(v => !selectedViolations || selectedViolations.includes(v.id))
+        .forEach(violation => {
+          if (!violationGroups.has(violation.id)) {
+            violationGroups.set(violation.id, {
+              violation,
+              pages: [],
+              count: 0
+            });
+          }
+          const group = violationGroups.get(violation.id)!;
+          group.pages.push(result.url);
+          group.count++;
+        });
+    });
+
+    // Create CSV rows
+    violationGroups.forEach(({ violation, pages, count }) => {
+      rows.push([
+        'Bug',
+        violation.help,
+        violation.description.replace(/"/g, '""'), // Escape quotes
+        violation.impact,
+        violation.tags.join('; '),
+        `${[...new Set(pages)].length}`,
+        count.toString()
+      ]);
+    });
+
+    // Convert to CSV string
+    return rows.map(row => 
+      row.map(cell => 
+        cell.includes(',') || cell.includes('"') || cell.includes('\n') 
+          ? `"${cell}"` 
+          : cell
+      ).join(',')
+    ).join('\n');
+  }  
 }

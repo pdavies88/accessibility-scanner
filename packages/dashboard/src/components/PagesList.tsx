@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ScanResult } from '@accessibility-scanner/shared';
 import {
   Table,
@@ -7,14 +7,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Badge,
-  Button,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui';
+} from '@/components/ui/select';
 import { PageDetailDialog } from './PageDetailDialog';
 
 interface PagesListProps {
@@ -109,7 +112,7 @@ export function PagesList({ results }: PagesListProps) {
                       {result.url}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={result.violations.length > 0 ? 'destructive' : 'success'}>
+                      <Badge variant={result.violations.length > 0 ? 'destructive' : 'secondary'}>
                         {result.violations.length}
                       </Badge>
                     </TableCell>
@@ -120,12 +123,12 @@ export function PagesList({ results }: PagesListProps) {
                     </TableCell>
                     <TableCell>
                       {seriousCount > 0 && (
-                        <Badge variant="orange">{seriousCount}</Badge>
+                        <Badge variant="destructive">{seriousCount}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {result.violations.length === 0 ? (
-                        <Badge variant="success">Clean</Badge>
+                        <Badge variant="secondary">Clean</Badge>
                       ) : (
                         <Badge variant="destructive">Issues Found</Badge>
                       )}
