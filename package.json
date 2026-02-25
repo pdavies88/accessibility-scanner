@@ -1,0 +1,60 @@
+{
+  "name": "accessibility-scanner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automated accessibility testing tool with axe-core",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "lerna run build",
+    "build:scanner": "lerna run build --scope=@accessibility-scanner/scanner",
+    "build:dashboard": "lerna run build --scope=@accessibility-scanner/dashboard",
+    "build:shared": "lerna run build --scope=@accessibility-scanner/shared",
+    "dev:scanner": "lerna run dev --scope=@accessibility-scanner/scanner --stream",
+    "dev:dashboard": "lerna run dev --scope=@accessibility-scanner/dashboard --stream",
+    "dev:server": "lerna run server --scope=@accessibility-scanner/scanner --stream",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:dashboard\"",
+    "clean": "lerna clean -y && rm -rf node_modules",
+    "test": "lerna run test",
+    "lint": "lerna run lint",
+    "type-check": "lerna run type-check",
+    "scan": "cd packages/scanner && npm run start --",
+    "update:deps": "npx npm-check-updates -u --workspaces && npx lerna exec -- npx npm-check-updates -u && npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "lerna": "^7.3.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.2.0",
+    "npm-check-updates": "^16.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pdavies88/accessibility-scanner.git"
+  },
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "axe-core",
+    "wcag",
+    "testing",
+    "automation"
+  ],
+  "author": "Preston Davies",
+  "license": "MIT",
+  "dependencies": {
+    "chardet": "^2.1.1"
+  }
+}

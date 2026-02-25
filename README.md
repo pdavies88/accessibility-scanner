@@ -13,6 +13,8 @@ To bump every workspace package to the latest stable version use `npm-check-upda
 npm run update:deps
 ```
 
+> **Note:** the script uses `--workspaces` (plural) so all workspace packages are updated; previous versions of ncu required passing specific workspace names.
+
 This will modify all `package.json` files, then install the new versions. You can also run the commands manually:
 
 ```sh

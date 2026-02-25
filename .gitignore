@@ -30,12 +30,6 @@ build/
 coverage/
 .nyc_output/
 
-# Data
-data/
-reports/
-*.db
-*.json
-
 # Misc
 .cache/
 .parcel-cache/

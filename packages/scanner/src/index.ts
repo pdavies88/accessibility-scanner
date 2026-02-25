@@ -1,7 +1,7 @@
 import { Command } from 'commander';
-import { SitemapScanner } from './scanner';
-import { ReportGenerator } from './report-generator';
-import { DatabaseService } from './database';
+import { SitemapScanner } from './scanner.js';
+import { ReportGenerator } from './report-generator.js';
+import { DatabaseService } from './database.js';
 
 const program = new Command();
 

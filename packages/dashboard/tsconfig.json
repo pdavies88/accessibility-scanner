@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["*"]
+    },
+    "composite": true,
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+    // package-local alias; keeps `@/foo` pointing at `packages/dashboard/src/foo`.
+    // we still extend the root config so other settings (including the shared
+    // package mapping) are inherited, but menu-specific imports now resolve
+    // correctly.
+  },
+  "include": ["src"]
+}

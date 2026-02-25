@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { ScanResult } from '@accessibility-scanner/shared';
 import {
   Table,
@@ -63,7 +63,7 @@ export function PagesList({ results }: PagesListProps) {
           <Input
             placeholder="Search URLs..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             className="max-w-sm"
           />
           <Select value={filter} onValueChange={(v: any) => setFilter(v)}>

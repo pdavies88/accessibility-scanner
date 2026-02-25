@@ -89,14 +89,14 @@ export class SitemapScanner {
         id: uuidv4(),
         url,
         timestamp: new Date(),
-        violations: results.violations.map(v => ({
+        violations: results.violations.map((v: any) => ({
           id: v.id,
           impact: v.impact as any,
           description: v.description,
           help: v.help,
           helpUrl: v.helpUrl,
           tags: v.tags,
-          nodes: v.nodes.map(n => ({
+          nodes: v.nodes.map((n: any) => ({
             html: n.html,
             target: n.target,
             failureSummary: n.failureSummary

@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/lerna/schemas/lerna-schema.json",
+  "version": "1.0.0",
+  "npmClient": "npm",
+  "packages": [
+    "packages/*"
+  ],
+  "command": {
+    "version": {
+      "allowBranch": ["main", "master"],
+      "conventionalCommits": true,
+      "createRelease": "github",
+      "message": "chore(release): publish %s"
+    },
+    "publish": {
+      "registry": "https://registry.npmjs.org/"
+    },
+    "run": {
+      "stream": true
+    }
+  }
+}
