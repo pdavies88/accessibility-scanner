@@ -1,4 +1,5 @@
 import { useState, ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ScanResult } from '@accessibility-scanner/shared';
 import {
   Table,
@@ -18,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { PageDetailDialog } from './PageDetailDialog';
 
 interface PagesListProps {
   results: ScanResult[];
@@ -28,7 +28,7 @@ export function PagesList({ results }: PagesListProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'with-violations' | 'clean'>('all');
   const [sortBy, setSortBy] = useState<'url' | 'violations' | 'timestamp'>('violations');
-  const [selectedPage, setSelectedPage] = useState<ScanResult | null>(null);
+  const navigate = useNavigate();
 
   const filteredResults = results
     .filter(result => {
@@ -140,7 +140,7 @@ export function PagesList({ results }: PagesListProps) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setSelectedPage(result)}
+                        onClick={() => navigate('/page', { state: { page: result } })}
                       >
                         View Details
                       </Button>
@@ -153,13 +153,6 @@ export function PagesList({ results }: PagesListProps) {
         </div>
       </div>
 
-      {selectedPage && (
-        <PageDetailDialog
-          page={selectedPage}
-          open={!!selectedPage}
-          onOpenChange={() => setSelectedPage(null)}
-        />
-      )}
     </>
   );
 }

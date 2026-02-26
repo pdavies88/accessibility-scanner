@@ -58,7 +58,6 @@ const config: Config = {
   	}
   },
   plugins: [require("tailwindcss-animate")],
-  presets: [require('shadcn/ui')],
 };
 
 export default config;

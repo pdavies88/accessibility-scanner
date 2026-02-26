@@ -1,26 +1,25 @@
-import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useReport } from '@/hooks/useReport';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
   TabsTrigger,
+} from '@/components/ui/tabs';
+import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  Button,
   Progress
 } from '@/components/ui';
 import { ViolationsTable } from '@/components/ViolationsTable';
 import { ImpactChart } from '@/components/ImpactChart';
 import { PagesList } from '@/components/PagesList';
-import { ExportDialog } from '@/components/ExportDialog';
+import { ExportData } from '@/components/ExportData';
 
 export function ReportDetail() {
   const { id } = useParams();
-  const [exportOpen, setExportOpen] = useState(false);
   
   const { report, loading, error } = useReport(id);
 
@@ -43,9 +42,6 @@ export function ReportDetail() {
             Scanned on {new Date(report.startTime).toLocaleString()}
           </p>
         </div>
-        <Button onClick={() => setExportOpen(true)}>
-          Export for Jira
-        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -158,9 +154,7 @@ export function ReportDetail() {
         </TabsContent>
       </Tabs>
 
-      <ExportDialog 
-        open={exportOpen} 
-        onOpenChange={setExportOpen}
+      <ExportData
         report={report}
       />
     </div>

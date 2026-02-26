@@ -1,6 +1,17 @@
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+
+// minimal Slot replacement used for `asChild` support in Button
+const Slot = React.forwardRef<any, any>(({ children, ...props }, ref) => {
+  if (React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      ...props,
+      ref,
+    })
+  }
+  return null
+})
+Slot.displayName = "Slot"
 
 import { cn } from "@/lib/utils"
 

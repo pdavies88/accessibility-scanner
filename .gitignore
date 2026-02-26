@@ -42,3 +42,5 @@ out/
 .dynamodb/
 .tern-port
 .vercel
+
+reports/
