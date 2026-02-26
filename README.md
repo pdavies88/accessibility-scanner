@@ -81,7 +81,7 @@ npm run scan -- scan -s https://example.com/sitemap.xml -c 10 --headless
 Data is stored in a simple JSON database at `data/reports.json` by default.  This is intended to be transient – you can remove the file manually or use the API to clear the history:
 
 ```bash
-curl -X DELETE http://localhost:3001/api/reports
+curl -X DELETE http://localhost:3003/api/reports
 ```
 
 Start both API server and dashboard in development mode:
@@ -93,7 +93,7 @@ npm run dev
 Or start them individually:
 
 ```bash
-npm run dev:server    # API server on port 3001
+npm run dev:server    # API server on port 3003
 npm run dev:dashboard # Dashboard on port 5173
 ```
 
@@ -102,54 +102,5 @@ npm run dev:dashboard # Dashboard on port 5173
 The dashboard provides an export feature that generates JSON files compatible with Jira's bulk import feature. You can also use the API directly:
 
 ```bash
-curl -X POST http://localhost:3001/api/reports/{reportId}/export > jira-issues.json
+curl -X POST http://localhost:3003/api/reports/{reportId}/export > jira-issues.json
 ```
-
-## Quick Start Commands
-
-```bash
-# Install all dependencies
-npm install
-
-# Build all packages
-npm run build
-
-# Start development (API + Dashboard)
-npm run dev
-
-# Run a scan
-npm run scan -- scan -s https://example.com/sitemap.xml
-```
-
-# Usage
-# Scan a website
-npm run scan -- scan -s https://example.com/sitemap.xml
-
-# With options
-npm run scan -- scan -s https://example.com/sitemap.xml -c 10 --headless
-
-# Runnig the dashboard
-# Start both API server and dashboard
-npm run dev
-
-# Or run them separately
-npm run dev:server  # API server on port 3001
-npm run dev:dashboard  # Dashboard on port 5173
-
-
-## Quick Start Commands
-
-After setting up these files, you can get started with:
-
-```bash
-# Install all dependencies
-npm install
-
-# Build all packages
-npm run build
-
-# Start development (API + Dashboard)
-npm run dev
-
-# Run a scan
-npm run scan -- scan -s https://example.com/sitemap.xml

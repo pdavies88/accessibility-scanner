@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ScanReport } from '@accessibility-scanner/shared';
+import { useReport } from '@/hooks/useReport';
 import { 
   Tabs, 
   TabsContent, 
@@ -23,12 +22,10 @@ export function ReportDetail() {
   const { id } = useParams();
   const [exportOpen, setExportOpen] = useState(false);
   
-  const { data: report, isLoading } = useQuery<ScanReport>({
-    queryKey: ['report', id],
-    queryFn: () => fetch(`/api/reports/${id}`).then(res => res.json())
-  });
+  const { report, loading, error } = useReport(id);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
   if (!report) return <div>Report not found</div>;
 
   const impactData = Object.entries(report.summary.violationsByImpact).map(

@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { ScanReport } from '@accessibility-scanner/shared';
+import { useReports } from '@/hooks/useReports';
 import { 
   Card, 
   CardContent, 
@@ -10,12 +9,10 @@ import {
 } from '@/components/ui';
 
 export function Dashboard() {
-  const { data: reports, isLoading } = useQuery<ScanReport[]>({
-    queryKey: ['reports'],
-    queryFn: () => fetch('/api/reports').then(res => res.json())
-  });
+  const { reports, loading, error } = useReports();
 
-  if (isLoading) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="container mx-auto p-6">
