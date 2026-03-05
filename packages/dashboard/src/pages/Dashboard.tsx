@@ -32,6 +32,9 @@ export function Dashboard() {
               </CardTitle>
               <p className="text-sm text-gray-500">
                 Scanned on {new Date(report.startTime).toLocaleString()}
+                {report.standard && (
+                  <> • <span className="font-medium">{report.standard}</span></>
+                )}
               </p>
             </CardHeader>
             <CardContent>

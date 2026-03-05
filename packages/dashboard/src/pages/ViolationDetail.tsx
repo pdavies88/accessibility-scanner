@@ -55,6 +55,11 @@ export function ViolationDetail() {
         </div>
 
         <div>
+          <h2 className="font-semibold">WCAG Level</h2>
+          <p>{violation.level || 'unknown'}</p>
+        </div>
+
+        <div>
           <h2 className="font-semibold">Tags</h2>
           <div className="flex flex-wrap gap-1">
             {violation.tags.map((tag) => (

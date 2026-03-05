@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { ViolationsTable } from '@/components/ViolationsTable';
 import { ImpactChart } from '@/components/ImpactChart';
+import { LevelChart } from '@/components/LevelChart';
 import { PagesList } from '@/components/PagesList';
 import { ExportData } from '@/components/ExportData';
 
@@ -27,7 +28,7 @@ export function ReportDetail() {
   if (error) return <div>Error: {error}</div>;
   if (!report) return <div>Report not found</div>;
 
-  const impactData = Object.entries(report.summary.violationsByImpact).map(
+  const impactData = Object.entries(report.summary.violationsByImpact || {}).map(
     ([impact, count]) => ({ impact, count })
   );
 
@@ -41,6 +42,11 @@ export function ReportDetail() {
           <p className="text-gray-500">
             Scanned on {new Date(report.startTime).toLocaleString()}
           </p>
+          {report.standard && (
+            <p className="text-gray-500">
+              Standard: <span className="font-medium">{report.standard}</span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -114,6 +120,19 @@ export function ReportDetail() {
             </CardHeader>
             <CardContent>
               <ImpactChart data={impactData} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Violations by WCAG Level</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LevelChart
+                data={Object.entries(report.summary.violationsByLevel || {}).map(
+                  ([level, count]) => ({ level, count })
+                )}
+              />
             </CardContent>
           </Card>
           

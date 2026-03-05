@@ -54,6 +54,7 @@ export function ViolationsTable({ report }: ViolationsTableProps) {
           <TableRow>
             <TableHead>Violation</TableHead>
             <TableHead>Impact</TableHead>
+            <TableHead>Level</TableHead>
             <TableHead>WCAG</TableHead>
             <TableHead>Occurrences</TableHead>
             <TableHead>Pages Affected</TableHead>
@@ -78,6 +79,11 @@ export function ViolationsTable({ report }: ViolationsTableProps) {
                   <Badge variant={impactColors[violation.impact]}>
                     {violation.impact}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {violation.level ||
+                    violation.tags.find(t => /wcag/i.test(t)) ||
+                    'N/A'}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">

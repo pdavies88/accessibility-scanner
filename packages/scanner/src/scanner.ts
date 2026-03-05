@@ -82,8 +82,13 @@ export class SitemapScanner {
     try {
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
       
-      const results = await new AxePuppeteer(page)
-        .analyze();
+      // apply the chosen standard as tags filter if provided
+      let axe = new AxePuppeteer(page);
+      if (this.options.standard) {
+        const tags = this.normalizeStandard(this.options.standard);
+        axe = axe.withTags(tags);
+      }
+      const results = await axe.analyze();
       
       return {
         id: uuidv4(),
@@ -96,6 +101,7 @@ export class SitemapScanner {
           help: v.help,
           helpUrl: v.helpUrl,
           tags: v.tags,
+          level: this.deriveLevel(v.tags),
           nodes: v.nodes.map((n: any) => ({
             html: n.html,
             target: n.target,
@@ -131,10 +137,11 @@ export class SitemapScanner {
       totalPages: results.length,
       totalViolations: results.reduce((sum, r) => sum + r.violations.length, 0),
       violationsByImpact: {} as Record<string, number>,
-      violationsByType: {} as Record<string, number>
+      violationsByType: {} as Record<string, number>,
+      violationsByLevel: {} as Record<string, number>
     };
 
-    // Calculate violations by impact and type
+    // Calculate violations by impact, type, and level
     results.forEach(result => {
       result.violations.forEach(violation => {
         summary.violationsByImpact[violation.impact] = 
@@ -142,16 +149,45 @@ export class SitemapScanner {
         
         summary.violationsByType[violation.id] = 
           (summary.violationsByType[violation.id] || 0) + 1;
+
+        const lvl = violation.level || 'unknown';
+        summary.violationsByLevel[lvl] = (summary.violationsByLevel[lvl] || 0) + 1;
       });
     });
 
     return {
       id: uuidv4(),
       sitemap: this.options.sitemap,
+      standard: this.options.standard,
       startTime,
       endTime,
       results,
       summary
     };
+  }
+
+  /**
+   * Convert a human-readable standard into an axe tag list.
+   */
+  private normalizeStandard(input: string): string[] {
+    const tag = input.replace(/[\.\s]/g, '').toLowerCase();
+    return [tag];
+  }
+
+  /**
+   * Look for a wcag level indicator in the axe tags.  Returns
+   * 'A', 'AA', 'AAA' or 'unknown'.
+   */
+  private deriveLevel(tags: string[]): 'A'|'AA'|'AAA'|'unknown' {
+    for (const t of tags) {
+      const m = t.match(/wcag[0-9.]*([a]{1,3})$/i);
+      if (m) {
+        const suffix = m[1].toUpperCase();
+        if (suffix === 'AAA' || suffix === 'AA' || suffix === 'A') {
+          return suffix as 'A'|'AA'|'AAA';
+        }
+      }
+    }
+    return 'unknown';
   }
 }

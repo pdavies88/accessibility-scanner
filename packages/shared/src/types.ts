@@ -15,6 +15,12 @@ export interface AxeViolation {
   help: string;
   helpUrl: string;
   tags: string[];
+  /**
+   * Convenience field derived from `tags` that normalizes the
+   * WCAG level (A / AA / AAA) for display and summarization.
+   * May be undefined if the scanner didn't compute it.
+   */
+  level?: 'A' | 'AA' | 'AAA' | 'unknown';
   nodes: ViolationNode[];
 }
 
@@ -27,6 +33,13 @@ export interface ViolationNode {
 export interface ScanReport {
   id: string;
   sitemap: string;
+  /**
+   * The WCAG standard/tag the report was generated against (e.g.
+   * "wcag21aa").  This comes from the CLI option and is used by the
+   * dashboard to remind the user which guideline they were scanning
+   * for.
+   */
+  standard?: string;
   startTime: Date;
   endTime: Date;
   results: ScanResult[];
@@ -35,6 +48,8 @@ export interface ScanReport {
     totalViolations: number;
     violationsByImpact: Record<string, number>;
     violationsByType: Record<string, number>;
+    /** aggregated counts by WCAG level (A/AA/AAA) */
+    violationsByLevel: Record<string, number>;
   };
 }
 
