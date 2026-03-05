@@ -1,6 +1,5 @@
 import { Command } from 'commander';
 import { SitemapScanner } from './scanner.js';
-import { ReportGenerator } from './report-generator.js';
 import { DatabaseService } from './database.js';
 
 const program = new Command();
@@ -14,7 +13,6 @@ program
   .command('scan')
   .description('Scan a website using its sitemap')
   .requiredOption('-s, --sitemap <url>', 'Sitemap URL')
-  .option('-o, --output <path>', 'Output directory', './reports')
   .option('-c, --concurrent <number>', 'Concurrent pages to scan', '5')
   .option('--headless', 'Run in headless mode', true)
   .action(async (options) => {
@@ -23,9 +21,12 @@ program
     
     const db = new DatabaseService();
     await db.saveReport(report);
-    
-    const generator = new ReportGenerator();
-    await generator.generateReport(report, options.output);
+
+    // report is now persisted to the JSON file; the React dashboard
+    // will pick it up from the API.  no need for a separate HTML or
+    // per-run JSON export.
+    // eslint-disable-next-line no-console
+    console.log(`Scan complete; report ID ${report.id}`);
   });
 
 program

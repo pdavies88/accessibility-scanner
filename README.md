@@ -34,7 +34,7 @@ Always run your tests and manual smoke checks after upgrading.
 - 📊 React dashboard for visualizing results
 - 🎫 Export functionality for Jira ticket creation
 - ⚡ Concurrent page scanning for performance
-- 💾 Local database storage (JSON file in `data/reports.json`)
+- 💾 Local storage in a simple JSON file (`data/reports.json`)
 - 📈 Detailed reports with violation tracking
 
 ## Getting Started
@@ -78,13 +78,13 @@ npm run scan -- scan -s https://example.com/sitemap.xml -c 10 --headless
 
 ### Dashboard
 
-Data is stored in a simple JSON database at `data/reports.json` by default.  This is intended to be transient – you can remove the file manually or use the API to clear the history:
+Report data lives in a plain JSON file at `data/reports.json`.  It's easy to inspect or overwrite manually; the API also exposes a delete endpoint if you want to clear it programmatically:
 
 ```bash
-curl -X DELETE http://localhost:3003/api/reports
+npm run scan -- clear
 ```
 
-Start both API server and dashboard in development mode:
+Start both API server and dashboard in development mode (no HTML pages are generated – the React app handles rendering):
 
 ```bash
 npm run dev

@@ -1,58 +1,60 @@
+import fs from 'fs/promises';
 import path from 'path';
-import fs from 'fs';
 import { ScanReport } from '@accessibility-scanner/shared';
-import { JSONFilePreset } from 'lowdb/node';
 
-interface DatabaseSchema {
+// This service used to wrap lowdb, but we no longer need a real
+// database.  Reports are stored in a single JSON file on disk; the
+// class provides a tiny layer to read/update it and to clear the
+// contents.  The React dashboard reads the same file via the API.
+
+
+interface Schema {
   reports: ScanReport[];
 }
 
 export class DatabaseService {
-  private db?: Awaited<ReturnType<typeof JSONFilePreset<DatabaseSchema>>>;
+  private file: string;
 
-  constructor(private dbPath?: string) {}
+  constructor(filePath?: string) {
+    this.file =
+      filePath || path.join(process.cwd(), 'data', 'reports.json');
+  }
 
-  private async ensureDb() {
-    if (this.db) return;
+  private async ensureFile(): Promise<void> {
+    const dir = path.dirname(this.file);
+    await fs.mkdir(dir, { recursive: true });
 
-    const file =
-      this.dbPath || path.join(process.cwd(), 'data', 'reports.json');
-    const dir = path.dirname(file);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    try {
+      await fs.access(this.file);
+    } catch {
+      await fs.writeFile(this.file, JSON.stringify({ reports: [] }, null, 2));
     }
+  }
 
-    const defaultData: DatabaseSchema = { reports: [] };
-    this.db = await JSONFilePreset<DatabaseSchema>(file, defaultData);
+  private async read(): Promise<Schema> {
+    await this.ensureFile();
+    const raw = await fs.readFile(this.file, 'utf-8');
+    return JSON.parse(raw) as Schema;
+  }
+
+  private async write(data: Schema): Promise<void> {
+    await fs.writeFile(this.file, JSON.stringify(data, null, 2));
   }
 
   async saveReport(report: ScanReport): Promise<void> {
-    await this.ensureDb();
-    const stored: any = {
-      ...report,
-      startTime: report.startTime.toISOString(),
-      endTime: report.endTime.toISOString(),
-      results: report.results.map((r) => ({
-        ...r,
-        timestamp: r.timestamp.toISOString(),
-      })),
-    };
-
-    await this.db!.update((data) => {
-      data.reports.push(stored as any);
-      return data;
-    });
+    const data = await this.read();
+    data.reports.push(report);
+    await this.write(data);
   }
 
   async getReports(): Promise<ScanReport[]> {
-    await this.ensureDb();
-    return this.db!.data.reports.map(this.deserializeReport);
+    const data = await this.read();
+    return data.reports;
   }
 
   async getReport(id: string): Promise<ScanReport | undefined> {
-    await this.ensureDb();
-    const found = this.db!.data.reports.find((r) => r.id === id);
-    return found ? this.deserializeReport(found) : undefined;
+    const data = await this.read();
+    return data.reports.find((r) => r.id === id);
   }
 
   /**
@@ -60,20 +62,6 @@ export class DatabaseService {
    * single snapshot and want to start fresh between runs.
    */
   async clearReports(): Promise<void> {
-    await this.ensureDb();
-    this.db!.data.reports = [];
-    await this.db!.write();
-  }
-
-  private deserializeReport(raw: any): ScanReport {
-    return {
-      ...raw,
-      startTime: new Date(raw.startTime),
-      endTime: new Date(raw.endTime),
-      results: raw.results.map((r: any) => ({
-        ...r,
-        timestamp: new Date(r.timestamp),
-      })),
-    };
+    await this.write({ reports: [] });
   }
 }

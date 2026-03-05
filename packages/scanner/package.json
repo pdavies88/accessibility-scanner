@@ -15,7 +15,6 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "fast-xml-parser": "^5.4.1",
-    "lowdb": "^7.0.1",
     "node-fetch": "^3.3.2",
     "p-limit": "^7.3.0",
     "puppeteer": "^24.37.5",
