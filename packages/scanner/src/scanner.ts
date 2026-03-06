@@ -81,7 +81,7 @@ export class SitemapScanner {
     
     try {
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-      const axe = new AxePuppeteer(page).withTags(['wcag2a', 'wcag2aa', 'wcag2aaa']);
+      const axe = new AxePuppeteer(page).withTags(['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'section508']);
       const results = await axe.analyze();
       
       return {

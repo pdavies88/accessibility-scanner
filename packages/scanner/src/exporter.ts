@@ -22,69 +22,14 @@ export class Reporter {
    * will typically span multiple lines.
    */
   exportToCsv(report: ScanReport, selectedViolations?: string[]): string {
-    const rows: string[][] = [];
-
-    // header row matching sample file
-    rows.push([
-      'TASKLIST',
-      'TASK',
-      'DESCRIPTION',
-      'ASSIGN TO',
-      'START DATE',
-      'DUE DATE',
-      'PRIORITY',
-      'ESTIMATED TIME',
-      'TAGS',
-      'STATUS'
-    ]);
-
-    const violationGroups = new Map<string, { violation: AxeViolation; pages: string[]; count: number }>();
-
-    report.results.forEach(result => {
-      result.violations
-        .filter(v => !selectedViolations || selectedViolations.includes(v.id))
-        .forEach(violation => {
-          if (!violationGroups.has(violation.id)) {
-            violationGroups.set(violation.id, {
-              violation,
-              pages: [],
-              count: 0
-            });
-          }
-          const group = violationGroups.get(violation.id)!;
-          group.pages.push(result.url);
-          group.count++;
-        });
-    });
-
-    violationGroups.forEach(({ violation, pages, count }) => {
-      const uniquePages = [...new Set(pages)];
-      const descriptionMarkdown = this.buildDescriptionMarkdown(
-        violation,
-        uniquePages,
-        count
-      );
-
-      rows.push([
-        'Accessibility', // arbitrary task list name
-        violation.help,
-        descriptionMarkdown.replace(/"/g, '""'), // escape quotes for CSV
-        '', // assign to
-        '', // start date
-        '', // due date
-        this.mapImpactToPriority(violation.impact),
-        '', // estimated time
-        violation.tags.join('; '),
-        'Active'
-      ]);
-    });
+    const rows = this.buildRows(report, selectedViolations);
 
     return rows
-      .map(row =>
+      .map((row: string[]) =>
         row
-          .map(cell =>
+          .map((cell: string) =>
             cell.includes(',') || cell.includes('"') || cell.includes('\n')
-              ? `"${cell}"`
+              ? `"${cell.replace(/"/g, '""')}"`
               : cell
           )
           .join(',')
@@ -102,8 +47,21 @@ export class Reporter {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Accessibility');
 
-    // header row
-    sheet.addRow([
+    const rows = this.buildRows(report, selectedViolations);
+    rows.forEach((row: string[]) => {
+      sheet.addRow(row);
+    });
+
+    // exceljs returns a Uint8Array/Buffer-like object; normalize to Node Buffer
+    const buf = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buf as ArrayBuffer);
+  }
+
+  private buildRows(report: ScanReport, selectedViolations?: string[]): string[][] {
+    const rows: string[][] = [];
+
+    // header row matching sample file
+    rows.push([
       'TASKLIST',
       'TASK',
       'DESCRIPTION',
@@ -116,37 +74,67 @@ export class Reporter {
       'STATUS'
     ]);
 
-    const csvString = this.exportToCsv(report, selectedViolations);
-    // reuse csv export for row generation: skip header line
-    const lines = csvString.split('\n').slice(1);
-    lines.forEach(line => {
-      // naive CSV parsing, since we know we just produced it
-      const cells = [] as string[];
-      let current = '';
-      let inQuote = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          if (inQuote && line[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuote = !inQuote;
+    // metadata row (row 2 in spreadsheet)
+    rows.push([
+      'Accessibility Updates',
+      '',
+      'Required Accessibility Updates',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      ''
+    ]);
+
+    // map violation ID to grouped data including html snippets
+    const violationGroups = new Map<
+      string,
+      { violation: AxeViolation; pageNodes: string[]; count: number }
+    >();
+
+    report.results.forEach(result => {
+      result.violations
+        .filter(v => !selectedViolations || selectedViolations.includes(v.id))
+        .forEach(violation => {
+          if (!violationGroups.has(violation.id)) {
+            violationGroups.set(violation.id, {
+              violation,
+              pageNodes: [],
+              count: 0
+            });
           }
-        } else if (ch === ',' && !inQuote) {
-          cells.push(current);
-          current = '';
-        } else {
-          current += ch;
-        }
-      }
-      cells.push(current);
-      sheet.addRow(cells);
+          const group = violationGroups.get(violation.id)!;
+
+          // each node represents a specific HTML snippet on the page
+          violation.nodes.forEach(node => {
+            group.pageNodes.push(`${result.url} - ${node.html}`);
+            group.count++;
+          });
+        });
     });
 
-    // exceljs returns a Uint8Array/Buffer-like object; normalize to Node Buffer
-    const buf = await workbook.xlsx.writeBuffer();
-    return Buffer.from(buf as ArrayBuffer);
+    violationGroups.forEach(({ violation, pageNodes, count }) => {
+      const uniqueEntries = [...new Set(pageNodes)];
+      const descriptionMarkdown = this.buildDescriptionMarkdown(
+        violation,
+        uniqueEntries,
+        count
+      );
+
+      const row: string[] = [];
+      row[0] = ''; // column A blank for data rows
+      row[1] = violation.help;
+      row[2] = descriptionMarkdown;
+      // D-H stay empty (indices 3..7)
+      row[8] = 'Accessibility'; // column I
+      row[9] = 'Active'; // column J
+
+      rows.push(row);
+    });
+
+    return rows;
   }
 
   private buildDescriptionMarkdown(
@@ -175,13 +163,4 @@ ${pages.map(p => `- ${p}`).join('\n')}
 `;
   }
 
-  private mapImpactToPriority(impact: string): string {
-    const mapping: Record<string, string> = {
-      critical: 'Highest',
-      serious: 'High',
-      moderate: 'Medium',
-      minor: 'Low'
-    };
-    return mapping[impact] || 'Medium';
-  }
 }
