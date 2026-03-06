@@ -1,5 +1,5 @@
-import puppeteer, { Browser } from 'puppeteer';
-import { AxePuppeteer } from '@axe-core/puppeteer';
+import { chromium, Browser } from 'playwright';
+import { AxeBuilder } from '@axe-core/playwright';
 import { XMLParser } from 'fast-xml-parser';
 import fetch from 'node-fetch';
 import pLimit from 'p-limit';
@@ -18,7 +18,7 @@ export class SitemapScanner {
     const urls = await this.fetchSitemapUrls(this.options.sitemap);
     const limit = pLimit(parseInt(this.options.concurrent));
     
-    this.browser = await puppeteer.launch({
+    this.browser = await chromium.launch({
       headless: this.options.headless,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
@@ -77,11 +77,15 @@ export class SitemapScanner {
   }
 
   private async scanPage(url: string): Promise<ScanResult> {
-    const page = await this.browser!.newPage();
+    const context = await this.browser!.newContext();
+    const page = await context.newPage();
     
     try {
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-      const axe = new AxePuppeteer(page).withTags(['wcag2a', 'wcag2aa', 'wcag2aaa']);
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      // https://www.deque.com/axe/core-documentation/api-documentation/#axecore-tags
+      const axe = new AxeBuilder({ page }).withTags([
+        'wcag22aa'
+      ]);
       const results = await axe.analyze();
       
       return {
@@ -119,6 +123,8 @@ export class SitemapScanner {
       };
     } finally {
       await page.close();
+      // close the context as well to free resources; page.close() is redundant but harmless
+      await context.close();
     }
   }
 

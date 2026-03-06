@@ -31,6 +31,7 @@ Always run your tests and manual smoke checks after upgrading.
 
 - 🔍 Automated website scanning via sitemap
 - ♿ Powered by axe-core for WCAG compliance testing
+- 🧪 Playwright for browser automation and scan scripting (see below for usage)
 - 📊 React dashboard for visualizing results
 - 📁 Export functionality (CSV / Excel) for task‑tracking tools
 - ⚡ Concurrent page scanning for performance
