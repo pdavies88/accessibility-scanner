@@ -109,7 +109,7 @@ export class Reporter {
 
           // each node represents a specific HTML snippet on the page
           violation.nodes.forEach(node => {
-            group.pageNodes.push(`${result.url} - ${node.html}`);
+            group.pageNodes.push(`${result.url} - \`${node.html}\``);
             group.count++;
           });
         });
@@ -117,9 +117,17 @@ export class Reporter {
 
     violationGroups.forEach(({ violation, pageNodes, count }) => {
       const uniqueEntries = [...new Set(pageNodes)];
+
+      // if there are too many nodes, strip HTML and only keep urls
+      const pagesForDescription =
+        uniqueEntries.length > 100
+          ? // keep only the URL portion (before the first ' - ')
+            [...new Set(uniqueEntries.map(p => p.split(' - ')[0]))]
+          : uniqueEntries;
+
       const descriptionMarkdown = this.buildDescriptionMarkdown(
         violation,
-        uniqueEntries,
+        pagesForDescription,
         count
       );
 
