@@ -32,7 +32,7 @@ Always run your tests and manual smoke checks after upgrading.
 - 🔍 Automated website scanning via sitemap
 - ♿ Powered by axe-core for WCAG compliance testing
 - 📊 React dashboard for visualizing results
-- 🎫 Export functionality for Jira ticket creation
+- 📁 Export functionality (CSV / Excel) for task‑tracking tools
 - ⚡ Concurrent page scanning for performance
 - 💾 Local storage in a simple JSON file (`data/reports.json`)
 - 📈 Detailed reports with violation tracking
@@ -108,10 +108,23 @@ npm run dev:server    # API server on port 3003
 npm run dev:dashboard # Dashboard on port 5173
 ```
 
-### Export for Jira
+### Exporting results
 
-The dashboard provides an export feature that generates JSON files compatible with Jira's bulk import feature. You can also use the API directly:
+The dashboard offers two tabular export formats that are compatible with
+most project management tools (Teamwork, Trello, Excel, etc.):
+
+* **CSV** – matches the sample layout provided in the import file.  The
+  `DESCRIPTION` column supports Markdown so your remediation notes can be
+  rich text.
+* **Excel** (`.xlsx`) – identical contents to the CSV but packaged as a
+  spreadsheet workbook.
+
+Both formats can be downloaded from the dashboard or obtained via the API:
 
 ```bash
-curl -X POST http://localhost:3003/api/reports/{reportId}/export > jira-issues.json
+# csv export
+curl -X POST http://localhost:3003/api/reports/{reportId}/export/csv > report.csv
+
+# excel export
+curl -X POST http://localhost:3003/api/reports/{reportId}/export/excel > report.xlsx
 ```

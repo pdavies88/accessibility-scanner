@@ -130,7 +130,7 @@ export const SelectContent = React.forwardRef<
       role="listbox"
       ref={ref}
       className={cn(
-        "absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md",
+        "absolute z-50 mt-1 rounded-md border bg-popover text-popover-foreground shadow-md",
         className
       )}
       {...props}

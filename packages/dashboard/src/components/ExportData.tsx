@@ -21,31 +21,14 @@ interface ExportDataProps {
 export function ExportData({ report }: ExportDataProps) {
 
   const [selectedViolation, setSelectedViolation] = useState<string | null>(null);
-  const [exportFormat, setExportFormat] = useState<'jira' | 'csv' | 'json'>('jira');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('csv');
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (types: string[]) => {
     setIsExporting(true);
     try {
-      const response = await fetch(`/api/reports/${report.id}/export`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          selectedViolations: types,
-          format: exportFormat,
-        }),
-      });
-      const data = await response.json();
-
-      if (exportFormat === 'jira') {
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-          type: 'application/json',
-        });
-        downloadFile(blob, `jira-export-${report.id}.json`);
-      } else if (exportFormat === 'csv') {
-        const csvResponse = await fetch(`/api/reports/${report.id}/export/csv`, {
+      if (exportFormat === 'csv') {
+        const response = await fetch(`/api/reports/${report.id}/export/csv`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -54,9 +37,23 @@ export function ExportData({ report }: ExportDataProps) {
             selectedViolations: types,
           }),
         });
-        const csvData = await csvResponse.text();
+        const csvData = await response.text();
         const blob = new Blob([csvData], { type: 'text/csv' });
         downloadFile(blob, `accessibility-issues-${report.id}.csv`);
+      } else {
+        // excel
+        const response = await fetch(`/api/reports/${report.id}/export/excel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            selectedViolations: types,
+          }),
+        });
+        const arrayBuffer = await response.arrayBuffer();
+        const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        downloadFile(blob, `accessibility-issues-${report.id}.xlsx`);
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -86,15 +83,14 @@ export function ExportData({ report }: ExportDataProps) {
             <Label>Export Format</Label>
             <Select
               value={exportFormat}
-              onValueChange={(v: string) => setExportFormat(v as 'jira'|'csv'|'json')}
+              onValueChange={(v: string) => setExportFormat(v as 'csv'|'excel')}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="jira">Jira Import (JSON)</SelectItem>
-                <SelectItem value="csv">CSV</SelectItem>
-                <SelectItem value="json">Raw JSON</SelectItem>
+                <SelectItem value="csv">CSV (Teamwork format)</SelectItem>
+                <SelectItem value="excel">Microsoft Excel (.xlsx)</SelectItem>
               </SelectContent>
             </Select>
           </div>

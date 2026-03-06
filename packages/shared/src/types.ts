@@ -53,11 +53,3 @@ export interface ScanReport {
   };
 }
 
-export interface JiraExport {
-  summary: string;
-  description: string;
-  issueType: string;
-  priority: string;
-  labels: string[];
-  customFields?: Record<string, any>;
-}
