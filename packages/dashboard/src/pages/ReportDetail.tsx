@@ -39,14 +39,9 @@ export function ReportDetail() {
           <h1 className="text-3xl font-bold mb-2">
             {new URL(report.sitemap).hostname}
           </h1>
-          <p className="text-gray-500">
+          <p className="">
             Scanned on {new Date(report.startTime).toLocaleString()}
           </p>
-          {report.standard && (
-            <p className="text-gray-500">
-              Standard: <span className="font-medium">{report.standard}</span>
-            </p>
-          )}
         </div>
       </div>
 
@@ -54,7 +49,7 @@ export function ReportDetail() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+            <CardTitle className="text-sm font-medium ">
               Pages Scanned
             </CardTitle>
           </CardHeader>
@@ -65,7 +60,7 @@ export function ReportDetail() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+            <CardTitle className="text-sm font-medium ">
               Total Violations
             </CardTitle>
           </CardHeader>
@@ -78,7 +73,7 @@ export function ReportDetail() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+            <CardTitle className="text-sm font-medium ">
               Avg per Page
             </CardTitle>
           </CardHeader>
@@ -91,7 +86,7 @@ export function ReportDetail() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+            <CardTitle className="text-sm font-medium ">
               Scan Duration
             </CardTitle>
           </CardHeader>
@@ -154,7 +149,7 @@ export function ReportDetail() {
                           className="h-2"
                         />
                       </div>
-                      <span className="text-sm text-gray-500 w-12 text-right">
+                      <span className="text-sm  w-12 text-right">
                         {count}
                       </span>
                     </div>

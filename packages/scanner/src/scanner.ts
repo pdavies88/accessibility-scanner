@@ -81,13 +81,7 @@ export class SitemapScanner {
     
     try {
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-      
-      // apply the chosen standard as tags filter if provided
-      let axe = new AxePuppeteer(page);
-      if (this.options.standard) {
-        const tags = this.normalizeStandard(this.options.standard);
-        axe = axe.withTags(tags);
-      }
+      const axe = new AxePuppeteer(page).withTags(['wcag2a', 'wcag2aa', 'wcag2aaa']);
       const results = await axe.analyze();
       
       return {
@@ -158,7 +152,6 @@ export class SitemapScanner {
     return {
       id: uuidv4(),
       sitemap: this.options.sitemap,
-      standard: this.options.standard,
       startTime,
       endTime,
       results,
@@ -166,13 +159,6 @@ export class SitemapScanner {
     };
   }
 
-  /**
-   * Convert a human-readable standard into an axe tag list.
-   */
-  private normalizeStandard(input: string): string[] {
-    const tag = input.replace(/[\.\s]/g, '').toLowerCase();
-    return [tag];
-  }
 
   /**
    * Look for a wcag level indicator in the axe tags.  Returns

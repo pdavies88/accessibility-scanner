@@ -15,7 +15,6 @@ program
   .requiredOption('-s, --sitemap <url>', 'Sitemap URL')
   .option('-c, --concurrent <number>', 'Concurrent pages to scan', '5')
   .option('--headless', 'Run in headless mode', true)
-  .option('--standard <tag>', 'WCAG standard/tag to scan (e.g. wcag2a, wcag21aa)')
   .action(async (options) => {
     const scanner = new SitemapScanner(options);
     const report = await scanner.scan();

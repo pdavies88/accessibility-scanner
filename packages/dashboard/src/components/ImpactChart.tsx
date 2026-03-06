@@ -30,7 +30,7 @@ export function ImpactChart({ data }: ImpactChartProps) {
         return (
           <div key={d.impact} className="flex items-center">
             <span className="w-24 text-sm font-medium capitalize">{d.impact}</span>
-            <div className="relative flex-1 ml-2 h-6 bg-gray-200 rounded">
+            <div className="relative flex-1 ml-2 h-6 rounded">
               <div
                 className="h-full rounded"
                 style={{

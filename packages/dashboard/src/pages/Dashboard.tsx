@@ -30,33 +30,30 @@ export function Dashboard() {
                   {new URL(report.sitemap).hostname}
                 </Link>
               </CardTitle>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm ">
                 Scanned on {new Date(report.startTime).toLocaleString()}
-                {report.standard && (
-                  <> • <span className="font-medium">{report.standard}</span></>
-                )}
               </p>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div>
-                  <p className="text-sm text-gray-500">Total Pages</p>
+                  <p className="text-sm ">Total Pages</p>
                   <p className="text-2xl font-bold">{report.summary.totalPages}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Total Violations</p>
+                  <p className="text-sm ">Total Violations</p>
                   <p className="text-2xl font-bold text-red-600">
                     {report.summary.totalViolations}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Critical</p>
+                  <p className="text-sm ">Critical</p>
                   <p className="text-2xl font-bold text-red-700">
                     {report.summary.violationsByImpact.critical || 0}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Serious</p>
+                  <p className="text-sm ">Serious</p>
                   <p className="text-2xl font-bold text-orange-600">
                     {report.summary.violationsByImpact.serious || 0}
                   </p>

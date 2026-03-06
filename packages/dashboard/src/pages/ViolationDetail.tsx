@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 interface LocationState {
   violation: AxeViolation;
-  url: string;
+  urls?: string[];
   reportId?: string;
 }
 
@@ -20,7 +20,7 @@ export function ViolationDetail() {
     return null;
   }
 
-  const { violation, url } = state;
+  const { violation, urls = [] } = state;
 
   return (
     <div className="container mx-auto p-6">
@@ -31,9 +31,23 @@ export function ViolationDetail() {
         </Button>
       </div>
 
-      <p className="mb-2">
-        <span className="font-medium">URL:</span> {url}
-      </p>
+      <div className="mb-2">
+        <span className="font-medium">URLs:</span>
+        <ul className="list-disc ml-6">
+          {urls.map((u) => (
+            <li key={u}>
+              <a
+                href={u}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-300 hover:underline text-sm"
+              >
+                {u}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="space-y-4">
         <div>
@@ -75,10 +89,10 @@ export function ViolationDetail() {
           {violation.nodes.map((node, i) => (
             <div key={i} className="space-y-2">
               <h3 className="font-medium">Example {i + 1}</h3>
-              <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">
+              <pre className="p-2 rounded text-xs overflow-x-auto">
                 <code>{node.html}</code>
               </pre>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm">
                 Target: {node.target.join(' > ')}
               </p>
               <p className="text-sm">{node.failureSummary}</p>
@@ -92,7 +106,7 @@ export function ViolationDetail() {
             href={violation.helpUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline text-sm"
+            className="text-purple-300 hover:underline text-sm"
           >
             {violation.helpUrl}
           </a>

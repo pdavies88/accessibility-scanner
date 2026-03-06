@@ -133,7 +133,7 @@ export function PagesList({ results }: PagesListProps) {
                         <Badge variant="destructive">Issues Found</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-gray-500">
+                    <TableCell className="text-sm">
                       {new Date(result.timestamp).toLocaleString()}
                     </TableCell>
                     <TableCell>

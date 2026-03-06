@@ -33,13 +33,6 @@ export interface ViolationNode {
 export interface ScanReport {
   id: string;
   sitemap: string;
-  /**
-   * The WCAG standard/tag the report was generated against (e.g.
-   * "wcag21aa").  This comes from the CLI option and is used by the
-   * dashboard to remind the user which guideline they were scanning
-   * for.
-   */
-  standard?: string;
   startTime: Date;
   endTime: Date;
   results: ScanResult[];

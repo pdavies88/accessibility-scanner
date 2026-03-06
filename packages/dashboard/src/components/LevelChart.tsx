@@ -29,7 +29,7 @@ export function LevelChart({ data }: LevelChartProps) {
         return (
           <div key={d.level} className="flex items-center">
             <span className="w-24 text-sm font-medium capitalize">{d.level}</span>
-            <div className="relative flex-1 ml-2 h-6 bg-gray-200 rounded">
+            <div className="relative flex-1 ml-2 h-6 rounded">
               <div
                 className="h-full rounded"
                 style={{

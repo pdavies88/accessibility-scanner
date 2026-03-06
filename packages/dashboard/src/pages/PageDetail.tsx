@@ -38,12 +38,12 @@ export function PageDetail() {
       <div className="space-y-4">
         <div>
           <p className="font-medium">URL</p>
-          <p className="text-sm text-gray-700 break-words">{page.url}</p>
+          <p className="text-sm  break-words">{page.url}</p>
         </div>
 
         <div>
           <p className="font-medium">Scanned</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm ">
             {new Date(page.timestamp).toLocaleString()}
           </p>
         </div>
@@ -72,7 +72,7 @@ export function PageDetail() {
                   <TableCell>
                     <div>
                       <p className="font-medium">{v.help}</p>
-                      <p className="text-sm text-gray-500">{v.id}</p>
+                      <p className="text-sm ">{v.id}</p>
                     </div>
                   </TableCell>
                   <TableCell>

@@ -72,7 +72,7 @@ export function ViolationsTable({ report }: ViolationsTableProps) {
                 <TableCell>
                   <div>
                     <p className="font-medium">{violation.help}</p>
-                    <p className="text-sm text-gray-500">{violation.id}</p>
+                    <p className="text-sm ">{violation.id}</p>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -103,8 +103,10 @@ export function ViolationsTable({ report }: ViolationsTableProps) {
                     size="sm"
                     variant="ghost"
                     onClick={() => {
+                      // pass all unique URLs for this violation
+                      const uniqueUrls = [...new Set(urls)];
                       navigate('/violation', {
-                        state: { violation, url: urls[0], reportId: report.id },
+                        state: { violation, urls: uniqueUrls, reportId: report.id },
                       });
                     }}
                   >

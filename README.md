@@ -66,26 +66,15 @@ npm run build
 
 ### Run a scan
 
-The CLI now accepts an optional `--standard` flag to restrict rules to a
-specific WCAG level or guideline.  Provide the tag you want to scan
-against (for example `wcag2a`, `wcag2aa`, `wcag21aa`, `wcag21aaa`,
-etc.) – the value is echoed back in the report and the dashboard will
-summarize violations by level (A/AA/AAA).
+Execute a sitemap-based scan against the target site. At minimum you must
+specify the sitemap URL:
 
 ```bash
-npm run scan -- scan -s https://example.com/sitemap.xml --standard wcag21aa
+npm run scan -- scan -s https://example.com/sitemap.xml
 ```
 
-With additional options:
-
-```bash
-npm run scan -- scan -s https://example.com/sitemap.xml -c 10 --headless \
-  --standard wcag2a
-```
-
-The dashboard will display the chosen standard at the top of each report, provide a
-breakdown of violations by WCAG level (A/AA/AAA), and include a column in the
-violations table so you can quickly see which level each issue belongs to.
+Additional options allow you to control concurrency (`-c`) or run the
+headless browser in non‑UI mode (`--headless`).
 
 ### Dashboard
 
