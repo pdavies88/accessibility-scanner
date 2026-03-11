@@ -12,7 +12,7 @@ program
 program
   .command('scan')
   .description('Scan a website using its sitemap')
-  .requiredOption('-s, --sitemap <url>', 'Sitemap URL')
+  .requiredOption('-s, --sitemap <url|path>', 'Sitemap URL or local file path')
   .option('-c, --concurrent <number>', 'Concurrent pages to scan', '5')
   .option('--headless', 'Run in headless mode', true)
   .action(async (options) => {

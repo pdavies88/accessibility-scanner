@@ -3,6 +3,8 @@ import { AxePuppeteer } from '@axe-core/puppeteer';
 import { XMLParser } from 'fast-xml-parser';
 import fetch from 'node-fetch';
 import pLimit from 'p-limit';
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { ScanResult, ScanReport } from '@accessibility-scanner/shared';
 
@@ -45,8 +47,15 @@ export class SitemapScanner {
   }
 
   private async fetchSitemapUrls(sitemapUrl: string): Promise<string[]> {
-    const response = await fetch(sitemapUrl);
-    const xml = await response.text();
+    let xml: string;
+
+    const localPath = resolve(sitemapUrl);
+    if (!sitemapUrl.startsWith('http://') && !sitemapUrl.startsWith('https://') && existsSync(localPath)) {
+      xml = readFileSync(localPath, 'utf-8');
+    } else {
+      const response = await fetch(sitemapUrl);
+      xml = await response.text();
+    }
     
     const parser = new XMLParser();
     const sitemap = parser.parse(xml);
