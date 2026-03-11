@@ -56,9 +56,9 @@ export function PageDetail() {
           <Badge variant={page.violations.length > 0 ? 'destructive' : 'secondary'}>
             {page.violations.length} Violations
           </Badge>
-          <Badge variant="default">{page.passes} passes</Badge>
-          <Badge variant="default">{page.incomplete} incomplete</Badge>
-          <Badge variant="default">{page.inapplicable} inapplicable</Badge>
+          <Badge variant="default">{page.summary.passesCount} passes</Badge>
+          <Badge variant="default">{page.summary.incompleteCount} incomplete</Badge>
+          <Badge variant="default">{page.summary.inapplicableCount} inapplicable</Badge>
         </div>
 
         <div>

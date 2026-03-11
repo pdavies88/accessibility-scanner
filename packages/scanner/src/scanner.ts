@@ -83,39 +83,84 @@ export class SitemapScanner {
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
       const axe = new AxePuppeteer(page);
       const results = await axe.analyze();
+
+    // await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+
+    // const results = await new AxePuppeteer(page)
+    //   .withTags([
+    //     'wcag2a',     // WCAG 2.0 Level A
+    //     'wcag2aa',    // WCAG 2.0 Level AA
+    //     'wcag21a',    // WCAG 2.1 Level A
+    //     'wcag21aa',   // WCAG 2.1 Level AA
+    //     'wcag22a',    // WCAG 2.2 Level A (New)
+    //     'wcag22aa',   // WCAG 2.2 Level AA (New)
+    //     'wcag2aaa',   // WCAG Level AAA (Highest level)
+    //     'best-practice' // Deque's recommended industry practices
+    //   ])
+    //   .analyze();
       
-      return {
-        id: uuidv4(),
-        url,
-        timestamp: new Date(),
-        violations: results.violations.map((v: any) => ({
-          id: v.id,
-          impact: v.impact as any,
-          description: v.description,
-          help: v.help,
-          helpUrl: v.helpUrl,
-          tags: v.tags,
-          level: this.deriveLevel(v.tags),
-          nodes: v.nodes.map((n: any) => ({
-            html: n.html,
-            target: n.target,
-            failureSummary: n.failureSummary
-          }))
-        })),
-        passes: results.passes.length,
-        incomplete: results.incomplete.length,
-        inapplicable: results.inapplicable.length
-      };
+    return {
+      id: uuidv4(),
+      url,
+      timestamp: new Date(),
+      environment: {
+        browser: results.testEnvironment.userAgent,
+        viewport: `${results.testEnvironment.windowWidth}x${results.testEnvironment.windowHeight}`,
+        axeVersion: results.testEngine.version,
+      },
+      violations: results.violations.map((v) => ({
+        id: v.id,
+        impact: v.impact,
+        description: v.description,
+        help: v.help,
+        helpUrl: v.helpUrl,
+        tags: v.tags,
+        level: this.deriveLevel(v.tags),
+        nodes: v.nodes.map((n) => ({
+          html: n.html,
+          target: n.target,
+          failureSummary: n.failureSummary,
+          data: n.data, 
+          relatedNodes: n.relatedNodes?.map(rn => ({ target: rn.target, html: rn.html }))
+        }))
+      })),
+      incomplete: results.incomplete.map((inc) => ({
+        id: inc.id,
+        impact: inc.impact,
+        description: inc.description,
+        help: inc.help,
+        nodes: inc.nodes.map(n => ({
+          html: n.html,
+          target: n.target,
+          explanation: n.any?.map(check => check.message).join(' ') 
+        }))
+      })),
+      summary: {
+        violationsCount: results.violations.length,
+        passesCount: results.passes.length,
+        incompleteCount: results.incomplete.length,
+        inapplicableCount: results.inapplicable.length
+      },
+      passedRules: results.passes.map(p => p.id) 
+    };
     } catch (error) {
       console.error(`Error scanning ${url}:`, error);
+      // when an error occurs we still need to return a ScanResult that
+      // satisfies the new interface.  fill arrays/summary with zero values.
       return {
         id: uuidv4(),
         url,
         timestamp: new Date(),
         violations: [],
-        passes: 0,
-        incomplete: 0,
-        inapplicable: 0
+        environment: { browser: '', viewport: '', axeVersion: '' },
+        incomplete: [],
+        summary: {
+          violationsCount: 0,
+          passesCount: 0,
+          incompleteCount: 0,
+          inapplicableCount: 0
+        },
+        passedRules: []
       };
     } finally {
       await page.close();

@@ -2,10 +2,35 @@ export interface ScanResult {
   id: string;
   url: string;
   timestamp: Date;
+  /**
+   * metadata about the environment in which the page was scanned
+   * (user agent, viewport, axe version, etc.)
+   */
+  environment?: {
+    browser: string;
+    viewport: string;
+    axeVersion: string;
+  };
   violations: AxeViolation[];
-  passes: number;
-  incomplete: number;
-  inapplicable: number;
+  /**
+   * incomplete results returned by axe; the shape mirrors what the
+   * scanner now produces when a check is incomplete.
+   */
+  incomplete: IncompleteResult[];
+  /**
+   * summary counts produced per-page (in addition to the global report
+   * summary).  These are convenience values calculated by the scanner.
+   */
+  summary: {
+    violationsCount: number;
+    passesCount: number;
+    incompleteCount: number;
+    inapplicableCount: number;
+  };
+  /**
+   * list of rule ids that passed on the page (for quick filtering)
+   */
+  passedRules: string[];
 }
 
 export interface AxeViolation {
@@ -28,6 +53,31 @@ export interface ViolationNode {
   html: string;
   target: string[];
   failureSummary: string;
+  /**
+   * optional raw data field supplied by axe; may include rule-specific
+   * information that can help debugging
+   */
+  data?: any;
+  /**
+   * additional nodes related to the primary target (e.g. <label> for a
+   * form control)
+   */
+  relatedNodes?: {
+    html: string;
+    target: string[];
+  }[];
+}
+
+export interface IncompleteResult {
+  id: string;
+  impact: 'minor' | 'moderate' | 'serious' | 'critical';
+  description: string;
+  help: string;
+  nodes: {
+    html: string;
+    target: string[];
+    explanation?: string;
+  }[];
 }
 
 export interface ScanReport {
