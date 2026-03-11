@@ -26,7 +26,7 @@ export function ViolationDetail() {
     <div className="container mx-auto p-6">
       <div className="mb-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">{violation.help}</h1>
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="default" onClick={() => navigate(-1)}>
           Back
         </Button>
       </div>
@@ -70,14 +70,14 @@ export function ViolationDetail() {
 
         <div>
           <h2 className="font-semibold">WCAG Level</h2>
-          <p>{violation.level || 'unknown'}</p>
+          <p>{violation.level || 'best-practice'}</p>
         </div>
 
         <div>
           <h2 className="font-semibold">Tags</h2>
           <div className="flex flex-wrap gap-1">
             {violation.tags.map((tag) => (
-              <Badge key={tag} variant="outline">
+              <Badge key={tag} variant="default">
                 {tag}
               </Badge>
             ))}

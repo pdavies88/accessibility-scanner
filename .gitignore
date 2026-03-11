@@ -42,5 +42,7 @@ out/
 .dynamodb/
 .tern-port
 .vercel
+# explicitly ignore generated scanner report file
+packages/scanner/data/reports.json
 data/
 

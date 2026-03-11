@@ -27,7 +27,7 @@ interface PagesListProps {
 export function PagesList({ results }: PagesListProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'with-violations' | 'clean'>('all');
-  const [sortBy, setSortBy] = useState<'url' | 'violations' | 'timestamp'>('violations');
+  const [sortBy, setSortBy] = useState<'url' | 'violations' | 'timestamp'>('url');
   const navigate = useNavigate();
 
   const filteredResults = results
@@ -139,7 +139,7 @@ export function PagesList({ results }: PagesListProps) {
                     <TableCell>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="default"
                         onClick={() => navigate('/page', { state: { page: result } })}
                       >
                         View Details

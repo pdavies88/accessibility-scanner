@@ -20,7 +20,7 @@ export interface AxeViolation {
    * WCAG level (A / AA / AAA) for display and summarization.
    * May be undefined if the scanner didn't compute it.
    */
-  level?: 'A' | 'AA' | 'AAA' | 'unknown';
+  level?: 'A' | 'AA' | 'AAA' | 'best-practice';
   nodes: ViolationNode[];
 }
 

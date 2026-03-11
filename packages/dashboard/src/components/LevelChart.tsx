@@ -10,11 +10,11 @@ export function LevelChart({ data }: LevelChartProps) {
     A: '#2563eb',
     AA: '#059669',
     AAA: '#8b5cf6',
-    unknown: '#6b7280',
+    ['best-practice']: '#6b7280',
   };
 
   const sortedData = React.useMemo(() => {
-    const order: Record<string, number> = { A: 0, AA: 1, AAA: 2, unknown: 3 };
+    const order: Record<string, number> = { A: 0, AA: 1, AAA: 2, 'best-practice': 3 };
     return [...data].sort((a, b) => (order[a.level] || 99) - (order[b.level] || 99));
   }, [data]);
 

@@ -144,7 +144,7 @@ export class SitemapScanner {
         summary.violationsByType[violation.id] = 
           (summary.violationsByType[violation.id] || 0) + 1;
 
-        const lvl = violation.level || 'unknown';
+        const lvl = violation.level || 'best-practice';
         summary.violationsByLevel[lvl] = (summary.violationsByLevel[lvl] || 0) + 1;
       });
     });
@@ -162,9 +162,9 @@ export class SitemapScanner {
 
   /**
    * Look for a wcag level indicator in the axe tags.  Returns
-   * 'A', 'AA', 'AAA' or 'unknown'.
+   * 'A', 'AA', 'AAA' or 'best-practice'.
    */
-  private deriveLevel(tags: string[]): 'A'|'AA'|'AAA'|'unknown' {
+  private deriveLevel(tags: string[]): 'A'|'AA'|'AAA'|'best-practice' {
     for (const t of tags) {
       const m = t.match(/wcag[0-9.]*([a]{1,3})$/i);
       if (m) {
@@ -174,6 +174,6 @@ export class SitemapScanner {
         }
       }
     }
-    return 'unknown';
+    return 'best-practice';
   }
 }

@@ -158,7 +158,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
           "px-3 py-1 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring",
           selected
             ? "border-b-2 border-primary text-primary"
-            : "text-muted-foreground hover:text-foreground",
+            : "hover:text-destructive cursor-pointer",
           className
         )}
         onClick={() => context.onChange(value)}

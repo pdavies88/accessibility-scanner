@@ -30,7 +30,7 @@ export function PageDetail() {
     <div className="container mx-auto p-6">
       <div className="mb-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Page Details</h1>
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="default" onClick={() => navigate(-1)}>
           Back
         </Button>
       </div>
@@ -38,7 +38,11 @@ export function PageDetail() {
       <div className="space-y-4">
         <div>
           <p className="font-medium">URL</p>
-          <p className="text-sm  break-words">{page.url}</p>
+          <p className="text-sm  break-words">
+            <a href={page.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:underline break-words">
+              {page.url}
+            </a>
+          </p>
         </div>
 
         <div>
@@ -52,51 +56,71 @@ export function PageDetail() {
           <Badge variant={page.violations.length > 0 ? 'destructive' : 'secondary'}>
             {page.violations.length} Violations
           </Badge>
-          <Badge variant="outline">{page.passes} passes</Badge>
-          <Badge variant="outline">{page.incomplete} incomplete</Badge>
-          <Badge variant="outline">{page.inapplicable} inapplicable</Badge>
+          <Badge variant="default">{page.passes} passes</Badge>
+          <Badge variant="default">{page.incomplete} incomplete</Badge>
+          <Badge variant="default">{page.inapplicable} inapplicable</Badge>
         </div>
 
         <div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Violation</TableHead>
-                <TableHead>Impact</TableHead>
-                <TableHead>WCAG</TableHead>
+                <TableHead className="min-w-[200px]">Violation</TableHead>
+                <TableHead className="min-w-[200px]">Impact</TableHead>
+                <TableHead className="min-w-[200px]">Location</TableHead>
+                <TableHead className="min-w-[200px]">Failure Summary</TableHead>
+                <TableHead className="min-w-[200px]">HTML</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {page.violations.map((v, idx) => (
-                <TableRow key={`${v.id}-${idx}`}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{v.help}</p>
-                      <p className="text-sm ">{v.id}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={impactColors[v.impact]}>
-                      {v.impact}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {v.tags
-                        .filter((tag) => tag.startsWith('wcag'))
-                        .map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {tag}
+              {page.violations.map((v, idx) => {
+                const nodes = v.nodes.length ? v.nodes : [{
+                  html: '',
+                  target: [],
+                  failureSummary: ''
+                }];
+
+                return nodes.map((n, nidx) => (
+                  <TableRow key={`${v.id}-${idx}-${nidx}`}>
+                    {nidx === 0 && (
+                      <>
+                        <TableCell rowSpan={nodes.length} className="min-w-[200px]">
+                          <div>
+                            <p className="font-medium">
+                              <a
+                                href={v.helpUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-purple-300 hover:underline"
+                              >
+                                {v.help}
+                              </a>
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell rowSpan={nodes.length} className="min-w-[200px]">
+                          <Badge variant={impactColors[v.impact]}>
+                            {v.impact}
                           </Badge>
-                        ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        </TableCell>
+                      </>
+                    )}
+                    <TableCell className="min-w-[200px]">
+                      {n.target.join(' ')}
+                    </TableCell>
+                    <TableCell className="min-w-[200px]">
+                      <p className="text-xs break-words">
+                        {n.failureSummary}
+                      </p>
+                    </TableCell>
+                    <TableCell className="min-w-[200px]">
+                      <pre className="text-xs break-words">
+                        {n.html}
+                      </pre>
+                    </TableCell>
+                  </TableRow>
+                ));
+              })}
             </TableBody>
           </Table>
         </div>

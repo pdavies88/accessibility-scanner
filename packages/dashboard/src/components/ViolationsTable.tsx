@@ -90,7 +90,7 @@ export function ViolationsTable({ report }: ViolationsTableProps) {
                     {violation.tags
                       .filter(tag => tag.startsWith('wcag'))
                       .map(tag => (
-                        <Badge key={tag} variant="outline" className="text-xs">
+                        <Badge key={tag} variant="default" className="text-xs">
                           {tag}
                         </Badge>
                       ))}
@@ -101,10 +101,12 @@ export function ViolationsTable({ report }: ViolationsTableProps) {
                 <TableCell>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="default"
                     onClick={() => {
-                      // pass all unique URLs for this violation
-                      const uniqueUrls = [...new Set(urls)];
+                      // pass all unique URLs for this violation, sorted alphabetically
+                      const uniqueUrls = [...new Set(urls)].sort((a, b) =>
+                        a.localeCompare(b)
+                      );
                       navigate('/violation', {
                         state: { violation, urls: uniqueUrls, reportId: report.id },
                       });

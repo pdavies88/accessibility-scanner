@@ -34,19 +34,19 @@
 @layer base {
   :root {
     /* dark-themed default colors */
-    --background: 0 0% 5%;           /* near black */
+    --background: 0 0% 0%;           /* pure black */
     --foreground: 0 0% 100%;         /* white */
-    --card: 0 0% 10%;
+    --card: 0 0% 5%;
     --card-foreground: 0 0% 100%;
-    --popover: 0 0% 10%;
+    --popover: 0 0% 5%;
     --popover-foreground: 0 0% 100%;
-    --primary: 266 100% 56%;         /* purple */
+    --primary: 266 80% 60%;         /* purple accent */
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 70%;
-    --muted: 0 0% 15%;
+    --secondary: 266 80% 40%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 266 100% 56%;
+    --accent: 266 80% 60%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -64,23 +64,23 @@
     /* explicit dark class matching same scheme */
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
-    --card: 0 0% 7%;
+    --card: 0 0% 5%;
     --card-foreground: 0 0% 100%;
-    --popover: 0 0% 7%;
+    --popover: 0 0% 5%;
     --popover-foreground: 0 0% 100%;
-    --primary: 266 100% 56%;
+    --primary: 266 80% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 70%;
+    --secondary: 266 80% 40%;
+    --secondary-foreground: 0 0% 100%;
     --muted: 0 0% 10%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 266 100% 56%;
+    --accent: 266 80% 60%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 15%;
+    --border: 0 0% 10%;
     --input: 0 0% 10%;
-    --ring: 266 100% 56%;
+    --ring: 266 80% 60%;
     --chart-1: 280 65% 60%;
     --chart-2: 320 75% 55%;
     --chart-3: 340 70% 50%;
