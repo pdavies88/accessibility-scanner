@@ -37,7 +37,7 @@ export function ReportDetail() {
       <div className="mb-6 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">
-            {new URL(report.sitemap).hostname}
+            {report.sitemap.startsWith('http') ? new URL(report.sitemap).hostname : report.sitemap}
           </h1>
           <p className="">
             Scanned on {new Date(report.startTime).toLocaleString()}
