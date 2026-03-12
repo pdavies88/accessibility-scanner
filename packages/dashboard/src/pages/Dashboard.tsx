@@ -27,7 +27,7 @@ export function Dashboard() {
                   to={`/reports/${report.id}`}
                   className="hover:underline"
                 >
-                  {new URL(report.sitemap).hostname}
+                  {report.sitemap.startsWith('http') ? new URL(report.sitemap).hostname : report.sitemap}
                 </Link>
               </CardTitle>
               <p className="text-sm ">
