@@ -150,6 +150,12 @@ export class Reporter {
     pages: string[],
     totalInstances: number
   ): string {
+    // if there are too many pages, only list the first 200 and add a note
+    const moreNote = pages.length > 200 ?
+      '\n- **Please see dashboard for more URLs**' : '';
+
+    const displayedPages = pages.length > 200 ? pages.slice(0, 200) : pages;
+
     return `## Accessibility Violation
 
 **Description:** ${violation.description}
@@ -166,7 +172,7 @@ export class Reporter {
 
 ## Affected Pages (${pages.length})
 
-${pages.map(p => `- ${p}`).join('\n')}
+${displayedPages.map(p => `- ${p}`).join('\n')}${moreNote}
 
 `;
   }
