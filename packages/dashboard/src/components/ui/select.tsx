@@ -12,6 +12,7 @@ interface SelectContextValue {
   onChange: (value: string) => void
   open: boolean
   setOpen: (open: boolean) => void
+  listboxId: string
 }
 
 const SelectContext = React.createContext<SelectContextValue | undefined>(
@@ -31,6 +32,7 @@ export interface SelectProps {
 export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
   ({ value, onValueChange, children, className, ...props }, ref) => {
     const [open, setOpen] = React.useState(false)
+    const listboxId = React.useId()
 
     // close on outside click
     React.useEffect(() => {
@@ -45,8 +47,8 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
     }, [open, ref])
 
     return (
-      <SelectContext.Provider value={{ value, onChange: onValueChange, open, setOpen }}>
-        <div ref={ref} className={className} {...props}>
+      <SelectContext.Provider value={{ value, onChange: onValueChange, open, setOpen, listboxId }}>
+        <div ref={ref} className={cn("relative", className)} {...props}>
           {children}
         </div>
       </SelectContext.Provider>
@@ -83,16 +85,17 @@ export const SelectTrigger = React.forwardRef<
       type="button"
       role="combobox"
       aria-expanded={ctx.open}
-      aria-controls="select-listbox"
+      aria-controls={ctx.listboxId}
+      aria-haspopup="listbox"
       className={cn(
-        "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
       onClick={handleClick}
     >
       {children}
-      <span className="ml-2">▾</span>
+      <span aria-hidden="true" className="ml-2">▾</span>
     </button>
   )
 })
@@ -126,11 +129,11 @@ export const SelectContent = React.forwardRef<
 
   return (
     <div
-      id="select-listbox"
+      id={ctx.listboxId}
       role="listbox"
       ref={ref}
       className={cn(
-        "absolute z-50 mt-1 rounded-md border bg-popover text-popover-foreground shadow-md",
+        "absolute z-50 mt-1 rounded-md border bg-popover text-popover-foreground shadow-md min-w-full",
         className
       )}
       {...props}

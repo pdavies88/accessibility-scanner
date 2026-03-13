@@ -1,4 +1,6 @@
-import { useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useCurrentReport } from '@/context/CurrentReportContext';
 import { useReport } from '@/hooks/useReport';
 import {
   Tabs,
@@ -21,8 +23,34 @@ import { ExportData } from '@/components/ExportData';
 
 export function ReportDetail() {
   const { id } = useParams();
-  
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeTab = searchParams.get('tab') || 'overview';
+  const activeImpact = searchParams.get('impact') || '';
+
+  function handleTabChange(tab: string) {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      if (tab !== 'violations') next.delete('impact');
+      return next;
+    });
+  }
+
   const { report, loading, error } = useReport(id);
+  const { setCurrentReport } = useCurrentReport();
+
+  useEffect(() => {
+    if (report) {
+      const label = report.sitemap.startsWith('http')
+        ? new URL(report.sitemap).hostname
+        : report.sitemap;
+      document.title = `${label} — Accessibility Report`;
+      setCurrentReport(report.id, label);
+    }
+    return () => { document.title = 'Accessibility Scanner'; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [report]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -47,53 +75,61 @@ export function ReportDetail() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium ">
-              Pages Scanned
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{report.summary.totalPages}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium ">
-              Total Violations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600">
+        <button
+          onClick={() => handleTabChange('pages')}
+          className="rounded-xl border border-border bg-card text-card-foreground shadow text-left hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors cursor-pointer"
+          aria-label={`${report.summary.totalPages} pages scanned — view Pages tab`}
+        >
+          <div className="flex flex-col space-y-1.5 p-6 pb-2">
+            <p className="text-sm font-medium">Pages Scanned</p>
+          </div>
+          <div className="p-6 pt-0">
+            <p className="text-2xl font-bold underline decoration-dotted">
+              {report.summary.totalPages}
+            </p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('violations')}
+          className="rounded-xl border border-border bg-card text-card-foreground shadow text-left hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors cursor-pointer"
+          aria-label={`${report.summary.totalViolations} total violations — view Violations tab`}
+        >
+          <div className="flex flex-col space-y-1.5 p-6 pb-2">
+            <p className="text-sm font-medium">Total Violations</p>
+          </div>
+          <div className="p-6 pt-0">
+            <p className="text-2xl font-bold text-red-400 underline decoration-dotted">
               {report.summary.totalViolations}
             </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium ">
-              Avg per Page
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('violations')}
+          className="rounded-xl border border-border bg-card text-card-foreground shadow text-left hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background transition-colors cursor-pointer"
+          aria-label={`${(report.summary.totalViolations / report.summary.totalPages).toFixed(1)} violations per page on average — view Violations tab`}
+        >
+          <div className="flex flex-col space-y-1.5 p-6 pb-2">
+            <p className="text-sm font-medium">Avg per Page</p>
+          </div>
+          <div className="p-6 pt-0">
+            <p className="text-2xl font-bold underline decoration-dotted">
               {(report.summary.totalViolations / report.summary.totalPages).toFixed(1)}
             </p>
-          </CardContent>
-        </Card>
-        
+          </div>
+        </button>
+
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium ">
+            <CardTitle className="text-sm font-medium">
               Scan Duration
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
               {Math.round(
-                (new Date(report.endTime).getTime() - 
+                (new Date(report.endTime).getTime() -
                  new Date(report.startTime).getTime()) / 1000
               )}s
             </p>
@@ -101,11 +137,17 @@ export function ReportDetail() {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="violations">Violations</TabsTrigger>
           <TabsTrigger value="pages">Pages</TabsTrigger>
+          <TabsTrigger
+            value="export"
+            className="ml-auto rounded-md bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background px-4 py-2 border-b-0"
+          >
+            Export
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
@@ -160,17 +202,20 @@ export function ReportDetail() {
         </TabsContent>
         
         <TabsContent value="violations">
-          <ViolationsTable report={report} />
+          <ViolationsTable
+            report={report}
+            initialImpactFilter={activeImpact}
+          />
         </TabsContent>
-        
+
         <TabsContent value="pages">
-          <PagesList results={report.results} />
+          <PagesList results={report.results} reportId={report.id} />
+        </TabsContent>
+
+        <TabsContent value="export">
+          <ExportData report={report} />
         </TabsContent>
       </Tabs>
-
-      <ExportData
-        report={report}
-      />
     </div>
   );
 }

@@ -21,8 +21,8 @@ export class Reporter {
    * newlines are preserved; description text may contain Markdown and
    * will typically span multiple lines.
    */
-  exportToCsv(report: ScanReport, selectedViolations?: string[]): string {
-    const rows = this.buildRows(report, selectedViolations);
+  exportToCsv(report: ScanReport, selectedViolations?: string[], tasklistName?: string): string {
+    const rows = this.buildRows(report, selectedViolations, tasklistName);
 
     return rows
       .map((row: string[]) =>
@@ -43,11 +43,11 @@ export class Reporter {
    * as the CSV export and leaves all styling up to the caller (no fancy
    * formatting is performed).
    */
-  async exportToExcel(report: ScanReport, selectedViolations?: string[]): Promise<Buffer> {
+  async exportToExcel(report: ScanReport, selectedViolations?: string[], tasklistName?: string): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Accessibility');
 
-    const rows = this.buildRows(report, selectedViolations);
+    const rows = this.buildRows(report, selectedViolations, tasklistName);
     rows.forEach((row: string[]) => {
       sheet.addRow(row);
     });
@@ -57,7 +57,7 @@ export class Reporter {
     return Buffer.from(buf as ArrayBuffer);
   }
 
-  private buildRows(report: ScanReport, selectedViolations?: string[]): string[][] {
+  private buildRows(report: ScanReport, selectedViolations?: string[], tasklistName?: string): string[][] {
     const rows: string[][] = [];
 
     // header row matching sample file
@@ -76,7 +76,7 @@ export class Reporter {
 
     // metadata row (row 2 in spreadsheet)
     rows.push([
-      'Accessibility Updates',
+      tasklistName?.trim() || 'Accessibility Updates',
       '',
       'Required Accessibility Updates',
       '',
@@ -131,8 +131,9 @@ export class Reporter {
         count
       );
 
+      const resolvedTasklist = tasklistName?.trim() || 'Accessibility Updates';
       const row: string[] = [];
-      row[0] = ''; // column A blank for data rows
+      row[0] = resolvedTasklist;
       row[1] = violation.help;
       row[2] = descriptionMarkdown;
       // D-H stay empty (indices 3..7)

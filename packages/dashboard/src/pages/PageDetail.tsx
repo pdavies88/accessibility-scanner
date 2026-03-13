@@ -3,6 +3,7 @@ import { ScanResult } from '@accessibility-scanner/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ExternalLink } from '@/components/ExternalLink';
 
 interface LocationState {
   page: ScanResult;
@@ -38,10 +39,8 @@ export function PageDetail() {
       <div className="space-y-4">
         <div>
           <p className="font-medium">URL</p>
-          <p className="text-sm  break-words">
-            <a href={page.url} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:underline break-words">
-              {page.url}
-            </a>
+          <p className="text-sm break-words">
+            <ExternalLink href={page.url} className="break-words">{page.url}</ExternalLink>
           </p>
         </div>
 
@@ -87,14 +86,7 @@ export function PageDetail() {
                         <TableCell rowSpan={nodes.length} className="min-w-[200px]">
                           <div>
                             <p className="font-medium">
-                              <a
-                                href={v.helpUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-purple-300 hover:underline"
-                              >
-                                {v.help}
-                              </a>
+                              <ExternalLink href={v.helpUrl}>{v.help}</ExternalLink>
                             </p>
                           </div>
                         </TableCell>

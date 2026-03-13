@@ -3,19 +3,27 @@ import { Dashboard } from './pages/Dashboard';
 import { ReportDetail } from './pages/ReportDetail';
 import { ViolationDetail } from './pages/ViolationDetail';
 import { PageDetail } from './pages/PageDetail';
+import { ViolationWindow } from './pages/ViolationWindow';
+import { PageWindow } from './pages/PageWindow';
 import { Layout } from './components/Layout';
+import { CurrentReportProvider } from './context/CurrentReportContext';
 
 function App() {
   return (
     <Router>
+      <CurrentReportProvider>
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/reports/:id" element={<ReportDetail />} />
+          <Route path="/reports/:id/violation/:violationId" element={<ViolationWindow />} />
+          <Route path="/reports/:id/page/:pageId" element={<PageWindow />} />
+          {/* Legacy state-based routes kept for backwards compatibility */}
           <Route path="/violation" element={<ViolationDetail />} />
           <Route path="/page" element={<PageDetail />} />
         </Routes>
       </Layout>
+      </CurrentReportProvider>
     </Router>
   );
 }

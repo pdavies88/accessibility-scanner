@@ -20,6 +20,7 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-link: hsl(var(--link));
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
   --color-chart-3: hsl(var(--chart-3));
@@ -45,7 +46,7 @@
     --secondary: 266 80% 40%;
     --secondary-foreground: 0 0% 100%;
     --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted-foreground: 0 0% 76%;
     --accent: 266 80% 60%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
@@ -53,6 +54,7 @@
     --border: 0 0% 20%;
     --input: 0 0% 15%;
     --ring: 266 100% 56%;
+    --link: 266 100% 78%;
     --chart-1: 280 65% 60%;
     --chart-2: 320 75% 55%;
     --chart-3: 340 70% 50%;
@@ -73,7 +75,7 @@
     --secondary: 266 80% 40%;
     --secondary-foreground: 0 0% 100%;
     --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted-foreground: 0 0% 76%;
     --accent: 266 80% 60%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
@@ -81,10 +83,16 @@
     --border: 0 0% 10%;
     --input: 0 0% 10%;
     --ring: 266 80% 60%;
+    --link: 266 100% 78%;
     --chart-1: 280 65% 60%;
     --chart-2: 320 75% 55%;
     --chart-3: 340 70% 50%;
     --chart-4: 260 80% 60%;
     --chart-5: 290 70% 55%
   }
+}
+
+@keyframes progress-indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
 }
