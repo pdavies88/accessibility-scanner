@@ -1,7 +1,8 @@
-import { ReactNode, useState, useRef, useEffect, useCallback } from 'react';
+import { ReactNode, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCurrentReport } from '@/context/CurrentReportContext';
 import { useReports } from '@/hooks/useReports';
+import { useScanContext } from '@/context/ScanContext';
 
 type Props = { children: ReactNode };
 
@@ -15,15 +16,14 @@ const FOCUSABLE = [
 ].join(', ');
 
 export function Layout({ children }: Props) {
-  const { reportId, reportLabel } = useCurrentReport();
+  const { reportId } = useCurrentReport();
   const { reports, refresh: refreshReports } = useReports();
-  const [showModal, setShowModal] = useState(false);
+  const { scanning } = useScanContext();
   const [showReports, setShowReports] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const reportsButtonRef = useRef<HTMLButtonElement>(null);
   const reportsDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -82,47 +82,6 @@ export function Layout({ children }: Props) {
       first?.focus();
     }
   }, [showReports]);
-
-  // ── New Scan modal ──────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (showModal) {
-      const first = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE)[0];
-      first?.focus();
-    } else if (!showReports) {
-      triggerRef.current?.focus();
-    }
-  }, [showModal]);
-
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!showModal) return;
-    if (e.key === 'Escape') { e.preventDefault(); setShowModal(false); return; }
-    if (e.key === 'Tab') {
-      const panel = panelRef.current;
-      if (!panel) return;
-      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-      } else {
-        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    }
-  }, [showModal]);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
-  function closeModal() { setShowModal(false); }
-
-  function confirmNewScan() {
-    setShowModal(false);
-    navigate('/', { state: { newScan: true } });
-  }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -213,8 +172,9 @@ export function Layout({ children }: Props) {
           {/* New Scan */}
           <button
             ref={triggerRef}
-            onClick={() => setShowModal(true)}
-            className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-medium px-4 py-1.5 hover:bg-primary/90 hover:text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors"
+            onClick={() => navigate('/', { state: { newScan: true } })}
+            disabled={scanning}
+            className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-medium px-4 py-1.5 hover:bg-primary/90 hover:text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             New Scan
           </button>
@@ -231,63 +191,6 @@ export function Layout({ children }: Props) {
         </p>
       </footer>
 
-      {/* New Scan confirmation modal */}
-      {showModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="new-scan-title"
-          aria-describedby="new-scan-desc"
-          className="fixed inset-0 z-50 flex items-center justify-center"
-        >
-          <div className="absolute inset-0 bg-black/70" onClick={closeModal} aria-hidden="true" />
-          <div ref={panelRef} className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card text-card-foreground shadow-xl p-6 mx-4">
-            <button
-              onClick={closeModal}
-              aria-label="Close dialog"
-              className="absolute top-4 right-4 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors"
-            >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </button>
-
-            <h2 id="new-scan-title" className="text-lg font-semibold mb-2 pr-8">
-              Start a new scan?
-            </h2>
-            <p id="new-scan-desc" className="text-sm text-muted-foreground mb-6">
-              {onReportPage
-                ? `This will leave the ${reportLabel ?? 'current'} report. Would you like to export your results first?`
-                : 'This will clear all form fields and start fresh.'}
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 mb-3">
-              {onReportPage && (
-                <Link
-                  to={`/reports/${activeReportId}?tab=export`}
-                  onClick={closeModal}
-                  className="flex-1 inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-medium px-5 py-3 hover:bg-primary/90 hover:text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors"
-                >
-                  Export Results First
-                </Link>
-              )}
-              <button
-                onClick={confirmNewScan}
-                className="flex-1 inline-flex items-center justify-center rounded-md border border-border text-sm font-medium px-5 py-3 hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors"
-              >
-                {onReportPage ? 'Skip & Start New Scan' : 'Start New Scan'}
-              </button>
-            </div>
-
-            <button
-              onClick={closeModal}
-              className="w-full inline-flex items-center justify-center rounded-md text-sm text-muted-foreground px-5 py-2.5 hover:text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

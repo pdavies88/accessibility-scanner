@@ -17,9 +17,10 @@ export class SitemapScanner {
   }
 
   async scan(): Promise<ScanReport> {
+    const signal: AbortSignal | undefined = this.options.signal;
     const urls: string[] = this.options.urls ?? await this.fetchSitemapUrls(this.options.sitemap);
     const limit = pLimit(parseInt(this.options.concurrent));
-    
+
     this.browser = await puppeteer.launch({
       headless: this.options.headless,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -30,7 +31,9 @@ export class SitemapScanner {
 
     const scanPromises = urls.map(url =>
       limit(async () => {
+        if (signal?.aborted) return;
         const result = await this.scanPage(url);
+        if (signal?.aborted) return;
         results.push(result);
         this.options.onProgress?.(results.length, urls.length, url);
         // eslint-disable-next-line no-console

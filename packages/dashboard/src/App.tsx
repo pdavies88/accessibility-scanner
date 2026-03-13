@@ -7,11 +7,13 @@ import { ViolationWindow } from './pages/ViolationWindow';
 import { PageWindow } from './pages/PageWindow';
 import { Layout } from './components/Layout';
 import { CurrentReportProvider } from './context/CurrentReportContext';
+import { ScanProvider } from './context/ScanContext';
 
 function App() {
   return (
     <Router>
       <CurrentReportProvider>
+      <ScanProvider>
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -23,6 +25,7 @@ function App() {
           <Route path="/page" element={<PageDetail />} />
         </Routes>
       </Layout>
+      </ScanProvider>
       </CurrentReportProvider>
     </Router>
   );

@@ -21,7 +21,7 @@ app.use(express.json({ limit: '10mb' }));
 // In-memory job store for scan progress tracking
 // ---------------------------------------------------------------------------
 
-type JobStatus = 'pending' | 'crawling' | 'scanning' | 'complete' | 'error';
+type JobStatus = 'pending' | 'crawling' | 'scanning' | 'complete' | 'error' | 'aborted';
 
 interface Job {
   emitter: EventEmitter;
@@ -30,6 +30,7 @@ interface Job {
   total: number;
   reportId?: string;
   error?: string;
+  abortController: AbortController;
 }
 
 const jobs = new Map<string, Job>();
@@ -53,6 +54,17 @@ app.get('/api/reports/:id', async (req, res) => {
     return res.status(404).json({ error: 'Report not found' });
   }
   return res.json(report);
+});
+
+app.delete('/api/reports/:id', async (req, res) => {
+  try {
+    const deleted = await db.deleteReport(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Report not found' });
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error('Error deleting report:', err);
+    return res.status(500).json({ error: 'Failed to delete report' });
+  }
 });
 
 app.delete('/api/reports', async (_req, res) => {
@@ -120,7 +132,8 @@ app.post('/api/scan', (req, res) => {
 
   const jobId = randomUUID();
   const emitter = new EventEmitter();
-  const job: Job = { emitter, status: 'pending', scanned: 0, total: 0 };
+  const abortController = new AbortController();
+  const job: Job = { emitter, status: 'pending', scanned: 0, total: 0, abortController };
   jobs.set(jobId, job);
 
   // Respond immediately so the client can open the SSE stream
@@ -134,6 +147,7 @@ app.post('/api/scan', (req, res) => {
       let scannerOptions: Record<string, unknown> = {
         concurrent: String(concurrent),
         headless: true,
+        signal: abortController.signal,
         onProgress: (scanned: number, total: number, url: string) => {
           job.scanned = scanned;
           job.total = total;
@@ -145,7 +159,17 @@ app.post('/api/scan', (req, res) => {
         job.status = 'crawling';
         emitter.emit('crawling', {});
 
-        const urls = await crawlSite(crawlUrl.trim(), { maxPages: Number(maxPages) });
+        const urls = await crawlSite(crawlUrl.trim(), {
+          maxPages: Number(maxPages),
+          onProgress: (url, count) => emitter.emit('crawl-progress', { url, count }),
+          signal: abortController.signal,
+        });
+
+        if (abortController.signal.aborted) {
+          job.status = 'aborted';
+          emitter.emit('aborted', {});
+          return;
+        }
 
         if (urls.length === 0) {
           job.status = 'error';
@@ -170,16 +194,27 @@ app.post('/api/scan', (req, res) => {
 
       const scanner = new SitemapScanner(scannerOptions);
       const report = await scanner.scan();
-      await db.saveReport(report);
 
+      if (abortController.signal.aborted) {
+        job.status = 'aborted';
+        emitter.emit('aborted', {});
+        return;
+      }
+
+      await db.saveReport(report);
       job.status = 'complete';
       job.reportId = report.id;
       emitter.emit('complete', { reportId: report.id });
     } catch (err) {
-      console.error('Scan error:', err);
-      job.status = 'error';
-      job.error = err instanceof Error ? err.message : 'Scan failed';
-      emitter.emit('error', { message: job.error });
+      if (abortController.signal.aborted) {
+        job.status = 'aborted';
+        emitter.emit('aborted', {});
+      } else {
+        console.error('Scan error:', err);
+        job.status = 'error';
+        job.error = err instanceof Error ? err.message : 'Scan failed';
+        emitter.emit('error', { message: job.error });
+      }
     } finally {
       if (tempFile) try { unlinkSync(tempFile); } catch { /* ignore */ }
       cleanupJob(jobId);
@@ -187,6 +222,17 @@ app.post('/api/scan', (req, res) => {
   })();
 
   return;
+});
+
+// ---------------------------------------------------------------------------
+// Abort a running job
+// ---------------------------------------------------------------------------
+
+app.delete('/api/scan/:jobId', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  job.abortController.abort();
+  return res.sendStatus(204);
 });
 
 // ---------------------------------------------------------------------------
@@ -210,26 +256,33 @@ app.get('/api/scan/:jobId/events', (req, res) => {
   if (job.status === 'crawling') send('crawling', {});
   if (job.status === 'scanning') send('scanning', { total: job.total, scanned: job.scanned });
   if (job.status === 'complete') { send('complete', { reportId: job.reportId }); res.end(); return; }
+  if (job.status === 'aborted')  { send('aborted', {});                          res.end(); return; }
   if (job.status === 'error')    { send('error', { message: job.error });         res.end(); return; }
 
-  const onCrawling  = (d: object) => send('crawling', d);
-  const onScanning  = (d: object) => send('scanning', d);
-  const onProgress  = (d: object) => send('progress', d);
-  const onComplete  = (d: object) => { send('complete', d); res.end(); };
-  const onError     = (d: object) => { send('error', d);    res.end(); };
+  const onCrawling      = (d: object) => send('crawling', d);
+  const onCrawlProgress = (d: object) => send('crawl-progress', d);
+  const onScanning      = (d: object) => send('scanning', d);
+  const onProgress      = (d: object) => send('progress', d);
+  const onComplete      = (d: object) => { send('complete', d); res.end(); };
+  const onAborted       = (d: object) => { send('aborted', d);  res.end(); };
+  const onError         = (d: object) => { send('error', d);    res.end(); };
 
-  job.emitter.on('crawling',  onCrawling);
-  job.emitter.on('scanning',  onScanning);
-  job.emitter.on('progress',  onProgress);
-  job.emitter.on('complete',  onComplete);
-  job.emitter.on('error',     onError);
+  job.emitter.on('crawling',       onCrawling);
+  job.emitter.on('crawl-progress', onCrawlProgress);
+  job.emitter.on('scanning',       onScanning);
+  job.emitter.on('progress',       onProgress);
+  job.emitter.on('complete',       onComplete);
+  job.emitter.on('aborted',        onAborted);
+  job.emitter.on('error',          onError);
 
   req.on('close', () => {
-    job.emitter.off('crawling',  onCrawling);
-    job.emitter.off('scanning',  onScanning);
-    job.emitter.off('progress',  onProgress);
-    job.emitter.off('complete',  onComplete);
-    job.emitter.off('error',     onError);
+    job.emitter.off('crawling',       onCrawling);
+    job.emitter.off('crawl-progress', onCrawlProgress);
+    job.emitter.off('scanning',       onScanning);
+    job.emitter.off('progress',       onProgress);
+    job.emitter.off('complete',       onComplete);
+    job.emitter.off('aborted',        onAborted);
+    job.emitter.off('error',          onError);
   });
 
   return;
