@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ScanReport } from '@accessibility-scanner/shared';
 
 export function useReports() {
@@ -6,7 +6,8 @@ export function useReports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchReports = useCallback(() => {
+    setLoading(true);
     fetch('/api/reports')
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch reports');
@@ -17,5 +18,9 @@ export function useReports() {
       .finally(() => setLoading(false));
   }, []);
 
-  return { reports, loading, error };
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  return { reports, loading, error, refresh: fetchReports };
 }

@@ -17,7 +17,7 @@ export class SitemapScanner {
   }
 
   async scan(): Promise<ScanReport> {
-    const urls = await this.fetchSitemapUrls(this.options.sitemap);
+    const urls: string[] = this.options.urls ?? await this.fetchSitemapUrls(this.options.sitemap);
     const limit = pLimit(parseInt(this.options.concurrent));
     
     this.browser = await puppeteer.launch({
@@ -28,10 +28,11 @@ export class SitemapScanner {
     const startTime = new Date();
     const results: ScanResult[] = [];
 
-    const scanPromises = urls.map(url => 
+    const scanPromises = urls.map(url =>
       limit(async () => {
         const result = await this.scanPage(url);
         results.push(result);
+        this.options.onProgress?.(results.length, urls.length, url);
         // eslint-disable-next-line no-console
         console.log(`Scanned: ${url}`);
         return result;
@@ -160,7 +161,7 @@ export class SitemapScanner {
 
     return {
       id: uuidv4(),
-      sitemap: this.options.sitemap,
+      sitemap: this.options.label ?? this.options.sitemap,
       startTime,
       endTime,
       results,

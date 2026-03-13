@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AxeViolation } from '@accessibility-scanner/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ExternalLink } from '@/components/ExternalLink';
 
 interface LocationState {
   violation: AxeViolation;
@@ -36,14 +37,7 @@ export function ViolationDetail() {
         <ul className="list-disc ml-6">
           {urls.map((u) => (
             <li key={u}>
-              <a
-                href={u}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-300 hover:underline text-sm"
-              >
-                {u}
-              </a>
+              <ExternalLink href={u} className="text-sm">{u}</ExternalLink>
             </li>
           ))}
         </ul>
@@ -102,14 +96,9 @@ export function ViolationDetail() {
 
         <div>
           <h2 className="font-semibold">Help URL</h2>
-          <a
-            href={violation.helpUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-purple-300 hover:underline text-sm"
-          >
+          <ExternalLink href={violation.helpUrl} className="text-sm">
             {violation.helpUrl}
-          </a>
+          </ExternalLink>
         </div>
       </div>
     </div>

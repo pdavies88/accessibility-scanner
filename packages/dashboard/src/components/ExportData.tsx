@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { ScanReport } from '@accessibility-scanner/shared';
-import {
-  Button,
-} from '@/components/ui/button';
-import {
-  Label,
-} from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -22,6 +19,7 @@ export function ExportData({ report }: ExportDataProps) {
 
   const [selectedViolation, setSelectedViolation] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('excel');
+  const [tasklistName, setTasklistName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (types: string[]) => {
@@ -35,6 +33,7 @@ export function ExportData({ report }: ExportDataProps) {
           },
           body: JSON.stringify({
             selectedViolations: types,
+            tasklistName: tasklistName.trim() || undefined,
           }),
         });
         const csvData = await response.text();
@@ -49,6 +48,7 @@ export function ExportData({ report }: ExportDataProps) {
           },
           body: JSON.stringify({
             selectedViolations: types,
+            tasklistName: tasklistName.trim() || undefined,
           }),
         });
         const arrayBuffer = await response.arrayBuffer();
@@ -80,12 +80,12 @@ export function ExportData({ report }: ExportDataProps) {
       <h2 className="text-lg font-semibold mb-4">Export Accessibility Issues</h2>
       <div className="space-y-4">
           <div>
-            <Label>Export Format</Label>
+            <Label htmlFor="export-format">Export Format</Label>
             <Select
               value={exportFormat}
               onValueChange={(v: string) => setExportFormat(v as 'csv'|'excel')}
             >
-              <SelectTrigger>
+              <SelectTrigger id="export-format">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -96,25 +96,36 @@ export function ExportData({ report }: ExportDataProps) {
           </div>
 
           <div>
-            <Label className="mb-2 block">Select Violations to Export</Label>
+            <Label htmlFor="tasklist-name">Tasklist Name</Label>
+            <Input
+              id="tasklist-name"
+              type="text"
+              placeholder="Accessibility Updates"
+              value={tasklistName}
+              onChange={e => setTasklistName(e.target.value)}
+            />
+          </div>
+
+          <fieldset>
+            <legend className="text-sm font-medium mb-2">Select Violations to Export</legend>
             <div className="border rounded-md p-4 max-h-64 overflow-y-auto space-y-2">
-                  {violationTypes.map(({ type, count }) => (
+              {violationTypes.map(({ type, count }) => (
                 <div key={type} className="flex items-center space-x-2">
                   <input
-                    id={type}
+                    id={`violation-${type}`}
                     name="violation"
                     type="radio"
                     className="h-4 w-4"
                     checked={selectedViolation === type}
                     onChange={() => setSelectedViolation(type)}
                   />
-                  <Label htmlFor={type} className="flex-1 cursor-pointer">
+                  <Label htmlFor={`violation-${type}`} className="flex-1 cursor-pointer">
                     {type} ({count} occurrences)
                   </Label>
                 </div>
               ))}
             </div>
-          </div>
+          </fieldset>
       </div>
       <div className="flex space-x-4 mt-4">
         <Button
