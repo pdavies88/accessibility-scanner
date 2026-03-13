@@ -1,31 +1,6 @@
 # Accessibility Scanner
 
-A comprehensive TypeScript tool for automated accessibility testing using axe-core.
-
----
-
-## Updating dependencies
-
-To bump every workspace package to the latest stable version use `npm-check-updates` (ncu). We've added a helper script to the root `package.json`:
-
-```sh
-# run from repository root
-npm run update:deps
-```
-
-> **Note:** the script uses `--workspaces` (plural) so all workspace packages are updated; previous versions of ncu required passing specific workspace names.
-
-This will modify all `package.json` files, then install the new versions. You can also run the commands manually:
-
-```sh
-npx npm-check-updates -u --workspace          # update all workspaces
-npx lerna exec -- npx npm-check-updates -u    # ensure subpackages are updated
-npm install                                   # install changes
-```
-
-Always run your tests and manual smoke checks after upgrading.
-
----
+A comprehensive TypeScript tool for automated accessibility testing using axe-core and Puppeteer. Allows for viewing data via a Vite Dashboard and exporting data as .csv or .xlsx.
 
 ## Features
 
@@ -41,8 +16,8 @@ Always run your tests and manual smoke checks after upgrading.
 
 ### Prerequisites
 
-- Node.js >= 18
-- npm >= 9
+- Node.js >= 20.19+ or 22.12+
+- npm >= 10
 
 ### Installation
 
@@ -53,7 +28,6 @@ cd accessibility-scanner
 
 # Install dependencies
 npm install
-# Lerna v7 removed the `bootstrap` command; npm workspaces handle linking automatically
 ```
 
 ### Build all packages
@@ -106,7 +80,7 @@ most project management tools (Teamwork, Trello, Excel, etc.):
   `DESCRIPTION` column supports Markdown so your remediation notes can be
   rich text.
 * **Excel** (`.xlsx`) – identical contents to the CSV but packaged as a
-  spreadsheet workbook.
+  spreadsheet workbook this format is perfect for Teamwork.
 
 Both formats can be downloaded from the dashboard or obtained via the API:
 

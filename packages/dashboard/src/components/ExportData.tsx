@@ -21,7 +21,7 @@ interface ExportDataProps {
 export function ExportData({ report }: ExportDataProps) {
 
   const [selectedViolation, setSelectedViolation] = useState<string | null>(null);
-  const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('csv');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('excel');
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (types: string[]) => {
@@ -89,8 +89,8 @@ export function ExportData({ report }: ExportDataProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="csv">CSV (Teamwork format)</SelectItem>
-                <SelectItem value="excel">Microsoft Excel (.xlsx)</SelectItem>
+                <SelectItem value="excel">Teamwork (.xlsx)</SelectItem>
+                <SelectItem value="csv">CSV (.csv)</SelectItem>
               </SelectContent>
             </Select>
           </div>
