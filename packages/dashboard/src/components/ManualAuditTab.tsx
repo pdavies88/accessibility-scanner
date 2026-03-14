@@ -32,6 +32,7 @@ import {
   Link,
   AlignLeft,
   Video,
+  ChevronDown,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -305,7 +306,9 @@ function CheckRow({
   onNotesChange: (notes: string) => void;
 }) {
   const [localNotes, setLocalNotes] = useState(check.notes ?? '');
+  const [showQuestions, setShowQuestions] = useState(false);
   const meta = check.wcagCriterion ? PREDEFINED_MAP[check.wcagCriterion] : undefined;
+  const questions = meta?.questions ?? [];
 
   return (
     <div className="border-b last:border-b-0 py-3 px-4">
@@ -340,6 +343,31 @@ function CheckRow({
           {check.description && (
             <p className="text-xs text-muted-foreground mb-2">{check.description}</p>
           )}
+
+          {questions.length > 0 && (
+            <div className="mb-2">
+              <button
+                type="button"
+                onClick={() => setShowQuestions(v => !v)}
+                aria-expanded={showQuestions}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+              >
+                <ChevronDown
+                  className={cn('h-3 w-3 transition-transform', showQuestions && 'rotate-180')}
+                  aria-hidden="true"
+                />
+                How to test
+              </button>
+              {showQuestions && (
+                <ul className="mt-1.5 space-y-1 pl-3 border-l-2 border-muted">
+                  {questions.map((q, i) => (
+                    <li key={i} className="text-xs text-muted-foreground leading-snug">{q}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           <input
             type="text"
             placeholder="Add notes…"
