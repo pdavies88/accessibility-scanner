@@ -115,7 +115,7 @@ export function ViolationWindow() {
               {pageId && (
                 <Link
                   to={`/reports/${id}/page/${pageId}`}
-                  className="inline-flex items-center gap-1 shrink-0 text-xs text-link hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
+                  className="inline-flex items-center gap-1 shrink-0 text-xs text-link hover:underline focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
                 >
                   <FileSearch className="h-3.5 w-3.5" aria-hidden="true" />
                   Page details

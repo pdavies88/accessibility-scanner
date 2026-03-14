@@ -138,7 +138,7 @@ function TreeRow({
                 onClick={() => setExpanded(e => !e)}
                 aria-expanded={expanded}
                 aria-label={expanded ? `Collapse children of ${node.segment}` : `Expand children of ${node.segment}`}
-                className="shrink-0 rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="shrink-0 rounded p-0.5 hover:bg-muted"
               >
                 <ChevronRight
                   className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-150"
@@ -255,7 +255,7 @@ function TreeRows({
             <button
               type="button"
               onClick={() => setShowCount(c => c + PAGE_SIZE)}
-              className="text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              className="text-sm text-primary underline-offset-4 hover:underline rounded"
             >
               Show {Math.min(remaining, PAGE_SIZE)} more
               <span className="text-muted-foreground ml-1">({remaining} remaining)</span>

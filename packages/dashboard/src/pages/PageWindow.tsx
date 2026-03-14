@@ -140,7 +140,7 @@ export function PageWindow() {
             });
 
             const segBtn = (active: boolean) => cn(
-              'px-2.5 py-1 text-xs rounded font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              'px-2.5 py-1 text-xs rounded font-medium transition-colors',
               active
                 ? 'bg-background shadow-sm text-foreground'
                 : 'text-muted-foreground hover:text-foreground cursor-pointer',
@@ -199,7 +199,7 @@ export function PageWindow() {
                             type="button"
                             onClick={() => toggleViolation(v.id)}
                             aria-expanded={isOpen}
-                            className="w-full flex items-start justify-between gap-4 px-4 py-3 text-left hover:bg-muted/40 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded group"
+                            className="w-full flex items-start justify-between gap-4 px-4 py-3 text-left hover:bg-muted/40 transition-colors rounded group"
                           >
                             <div className="flex-1 min-w-0 space-y-1.5">
                               <p className="font-medium leading-snug">{v.help}</p>

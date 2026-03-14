@@ -26,8 +26,8 @@ export function Layout({ children }: Props) {
 
   const navLink = (active: boolean) =>
     active
-      ? 'text-sm font-medium text-foreground border-b-2 border-link pb-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded-sm'
-      : 'text-sm text-muted-foreground hover:text-link focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded-sm';
+      ? 'text-sm font-medium text-foreground border-b-2 border-link pb-0.5 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring rounded-sm'
+      : 'text-sm text-muted-foreground hover:text-link focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring rounded-sm';
 
   // ── Reports dropdown ────────────────────────────────────────────────────────
 
@@ -146,7 +146,7 @@ export function Layout({ children }: Props) {
                         role="option"
                         aria-selected={isActive}
                         onClick={() => setShowReports(false)}
-                        className={`flex items-start justify-between gap-2 px-4 py-2.5 text-sm hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring transition-colors ${
+                        className={`flex items-start justify-between gap-2 px-4 py-2.5 text-sm hover:bg-muted focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[-2px] focus-visible:outline-ring transition-colors ${
                           isActive ? 'bg-primary/10 text-foreground font-medium' : 'text-muted-foreground'
                         }`}
                       >
@@ -164,7 +164,7 @@ export function Layout({ children }: Props) {
             ref={triggerRef}
             onClick={() => navigate('/', { state: { newScan: true } })}
             disabled={scanning}
-            className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-medium px-4 py-1.5 hover:bg-primary/90 hover:text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-medium px-4 py-1.5 hover:bg-primary/90 hover:text-primary-foreground focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             New Scan
           </button>

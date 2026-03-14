@@ -211,7 +211,7 @@ function LevelFilterSelector({
             onClick={() => onChange(o.value)}
             aria-pressed={value === o.value}
             className={cn(
-              'px-2.5 py-1 text-xs rounded font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              'px-2.5 py-1 text-xs rounded font-medium transition-colors',
               value === o.value
                 ? 'bg-background shadow-sm text-foreground'
                 : 'text-muted-foreground hover:text-foreground cursor-pointer',
@@ -251,7 +251,7 @@ function ViewModeSelector({
             onClick={() => onChange(m.value)}
             aria-pressed={value === m.value}
             className={cn(
-              'px-2.5 py-1 text-xs rounded font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              'px-2.5 py-1 text-xs rounded font-medium transition-colors',
               value === m.value
                 ? 'bg-background shadow-sm text-foreground'
                 : 'text-muted-foreground hover:text-foreground cursor-pointer',
@@ -395,7 +395,7 @@ function CheckRow({
                       type="button"
                       onClick={() => onLevelClick(check.level as 'A' | 'AA' | 'AAA')}
                       aria-label={`Filter by level ${check.level}`}
-                      className={cn('inline-flex items-center rounded border text-xs h-5 px-1.5 py-0 font-medium transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer', LEVEL_COLORS[check.level])}
+                      className={cn('inline-flex items-center rounded border text-xs h-5 px-1.5 py-0 font-medium transition-opacity hover:opacity-75 cursor-pointer', LEVEL_COLORS[check.level])}
                     >
                       {check.level}
                     </button>
@@ -413,7 +413,7 @@ function CheckRow({
                       type="button"
                       onClick={() => onCategoryClick(meta.category)}
                       aria-label={`Filter by category ${meta.category}`}
-                      className={cn('inline-flex items-center gap-1 rounded border text-xs h-5 px-1.5 py-0 font-normal transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer', colorClass)}
+                      className={cn('inline-flex items-center gap-1 rounded border text-xs h-5 px-1.5 py-0 font-normal transition-opacity hover:opacity-75 cursor-pointer', colorClass)}
                     >
                       {Icon && <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />}
                       {meta.category}
@@ -440,7 +440,7 @@ function CheckRow({
                 type="button"
                 onClick={() => setShowQuestions(v => !v)}
                 aria-expanded={showQuestions}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
               >
                 <ChevronDown
                   className={cn('h-3 w-3 transition-transform', showQuestions && 'rotate-180')}
@@ -463,7 +463,7 @@ function CheckRow({
             type="button"
             onClick={() => setShowEvidence(v => !v)}
             aria-expanded={showEvidence}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
           >
             <ChevronDown
               className={cn('h-3 w-3 transition-transform', showEvidence && 'rotate-180')}
@@ -471,7 +471,7 @@ function CheckRow({
             />
             Evidence
             {(check.codeSnippet || check.screenshotDataUrl) && (
-              <span className="ml-1 text-primary">●</span>
+              <span className="ml-1 text-xs text-primary font-medium">(attached)</span>
             )}
           </button>
 
@@ -508,13 +508,16 @@ function CheckRow({
                       alt="Screenshot of affected area"
                       className="max-w-full max-h-48 rounded border border-border object-contain"
                     />
+                    {/* Touch target is 44×44px via padding; visual indicator stays small */}
                     <button
                       type="button"
                       onClick={removeScreenshot}
                       aria-label="Remove screenshot"
-                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="absolute -top-1.5 -right-1.5 h-11 w-11 flex items-center justify-center rounded-full bg-transparent"
                     >
-                      <X className="h-3 w-3" />
+                      <span aria-hidden="true" className="h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80">
+                        <X className="h-3 w-3" aria-hidden="true" />
+                      </span>
                     </button>
                   </div>
                 ) : (
@@ -675,19 +678,20 @@ function CheckGroupSection({
 
   return (
     <section aria-labelledby={headingId}>
+      {/* WCAG 2.4.6 / 2.4.10 — button inside h3 so the group has a semantic heading */}
+      <h3 id={headingId} className="mb-2">
       <button
         type="button"
-        id={headingId}
         onClick={() => setCollapsed(v => !v)}
         aria-expanded={!collapsed}
-        className="w-full flex items-center justify-between gap-3 mb-2 group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+        className="w-full flex items-center justify-between gap-3 group rounded"
       >
         <div className="flex items-center gap-2 min-w-0">
           <ChevronDown
-            className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', !collapsed && 'rotate-180')}
+            className={cn('h-4 w-4 shrink-0 text-muted-foreground', !collapsed && 'rotate-180')}
             aria-hidden="true"
           />
-          <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide group-hover:text-foreground transition-colors">
+          <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide group-hover:text-foreground">
             {group.label}
           </span>
           <span className="text-xs font-normal normal-case text-muted-foreground">
@@ -703,6 +707,7 @@ function CheckGroupSection({
           </div>
         )}
       </button>
+      </h3>
       {!collapsed && group.description && (
         <p className="text-xs text-muted-foreground mb-2 pl-6">{group.description}</p>
       )}
@@ -1015,7 +1020,7 @@ export function ManualAuditTab({
                   onClick={() => setCategoryFilter(null)}
                   aria-label={`Remove filter: ${categoryFilter}`}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded border text-xs px-2 py-0.5 font-normal transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                    'inline-flex items-center gap-1 rounded border text-xs px-2 py-0.5 font-normal transition-opacity hover:opacity-75',
                     CATEGORY_COLORS[categoryFilter],
                   )}
                 >

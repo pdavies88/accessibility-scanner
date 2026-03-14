@@ -102,14 +102,32 @@
 
   a, button { cursor: pointer; }
 
-  /* WCAG 2.5.8 — minimum 24×24 px target size for all interactive controls */
+  /* WCAG 2.5.5 AAA — minimum 44×44 px target size for all interactive controls */
   button,
   [role="button"],
   input[type="button"],
   input[type="submit"],
   input[type="reset"] {
-    min-height: 1.5rem; /* 24px */
-    min-width: 1.5rem;  /* 24px */
+    min-height: 2.75rem; /* 44px */
+    min-width:  2.75rem; /* 44px */
+  }
+}
+
+/* WCAG 2.4.13 AAA — focus indicator: ≥ 3 CSS px, 3:1 contrast against adjacent colours.
+   Placed outside @layer so it takes precedence over Tailwind utility layers. */
+:focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* WCAG 2.3.3 AAA — Animation from Interactions: respect prefers-reduced-motion.
+   Suppresses all CSS transitions and animations for users who opt out of motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
