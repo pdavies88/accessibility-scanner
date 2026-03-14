@@ -1,11 +1,14 @@
 # Accessibility Scanner
 
-A comprehensive TypeScript tool for automated accessibility testing using axe-core and Puppeteer. Allows for viewing data via a Vite Dashboard and exporting data as .csv or .xlsx.
+A comprehensive TypeScript tool for automated and manual accessibility testing using axe-core and Puppeteer. Allows for viewing data via a Vite Dashboard and exporting data as .csv or .xlsx.
 
 ## Features
 
 - 🔍 Automated website scanning via sitemap URL, XML file upload, or site crawl
 - ♿ Powered by axe-core for WCAG compliance testing
+- 📋 Manual audit checklist covering WCAG A, AA, and AAA criteria that axe-core cannot auto-detect
+- 🗂️ Multiple failure instances per criterion with scope tagging (Global / Common / Page Specific) and evidence capture (code snippet + screenshot)
+- ✅ Audit completion tracking with coverage percentage displayed in the report overview
 - 📊 React dashboard for visualizing results with WCAG criteria and level details
 - 📁 Export functionality (CSV / Excel) formatted for task‑tracking tools (Teamwork, etc.)
 - ⚡ Concurrent page scanning for performance
@@ -84,18 +87,71 @@ The dashboard supports three scan input modes:
 
 Each report includes:
 
-- **Overview** — violations by impact, violations by WCAG level, and top violation types (with friendly names, WCAG criteria, and level)
-- **Violations** — full table grouped by violation type, filterable by impact, with WCAG level and criteria columns
-- **Pages** — per-page results with a detail panel showing violations including WCAG level and criteria badges
+- **Overview** — violations by impact, violations by WCAG level, top violation types, and manual audit coverage percentage
+- **Violations** — accordion cards grouped by violation type, filterable by impact and WCAG level, with affected pages linked
+- **Pages** — per-page results filterable by status (audited / not yet audited), with a detail panel for each page
 - **Export** — download a formatted task list (see below)
 
-#### Page & Violation Detail
+#### Page Detail
 
-Individual violation and page detail views show:
+Each page has two tabs:
+
+- **Automated Issues** — axe-core violations with impact and WCAG level filters, expandable instances showing element selectors and HTML
+- **Manual Audit** — full manual checklist (see below)
+
+Individual violation cards show:
 
 - WCAG success criterion number (e.g. `2.4.2`) prepended to the violation name
-- **Level** column — conformance level badge (A, AA, AAA, or best-practice)
-- **WCAG Criteria** column — individual criterion badges (e.g. `2.4.2`)
+- **Level** badge — conformance level (A, AA, AAA, or best-practice)
+- **WCAG Criteria** badges — individual criterion references (e.g. `2.4.2`)
+- Clickable impact and level badges to filter inline
+
+### Manual Audit
+
+The manual audit tab on each page detail covers WCAG criteria that axe-core cannot fully verify automatically.
+
+#### Checklist
+
+- Predefined checks for **WCAG A**, **AA**, and **AAA** criteria, each with a description and "How to test" guidance questions
+- Checks are grouped and can be viewed by **WCAG Level**, **Category**, **Priority**, or **Status**
+- Level and category filter controls let you focus on a subset of checks
+- Each group shows a collapsed summary of pass/fail/n/a/not-tested counts
+
+#### Statuses
+
+Each check has one of four statuses:
+
+| Status | Meaning |
+|--------|---------|
+| ✓ Pass | Criterion is met |
+| ✗ Fail | Criterion is not met (add failure instances) |
+| — N/A | Criterion is not applicable to this page |
+| ? Not Tested | Not yet reviewed (default) |
+
+#### Failure Instances
+
+When a criterion fails, you can record one or more individual failure instances — each with:
+
+- **Scope tag** — **Global** (affects the whole site), **Common** (appears on many pages), or **Page Specific**
+- **Description** — free-text note describing what failed
+- **Code snippet** — paste or type the relevant HTML
+- **Screenshot** — upload an image or paste from clipboard
+
+Instances are added via "Add failure instance" on any check row. Deleting the last instance automatically resets the check status back to Not Tested.
+
+#### Custom Issues
+
+Use **Add Custom Issue** to record findings that don't map to a predefined WCAG criterion. Custom issues support a title, description, impact level, status, and notes.
+
+#### Auditor Notes & Completion
+
+- **Auditor Notes** — a free-text field for overall page-level observations
+- **Mark Audit Complete** — locks in the audit; shows a completion timestamp and "Audited" badge on the pages list
+- **Re-open** — reverts completion to allow further edits; focus management ensures keyboard users stay oriented after each action
+
+#### Manual Audit Coverage
+
+The report **Overview** tab shows a **Manual Audit Coverage** card with a progress bar indicating how many pages have been marked complete.
 
 ### Exporting Results
 
@@ -139,6 +195,8 @@ curl -X POST http://localhost:3003/api/reports/{reportId}/export/excel \
 
 ## API Reference
 
+### Reports & Scanning
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/reports` | List all reports |
@@ -149,3 +207,16 @@ curl -X POST http://localhost:3003/api/reports/{reportId}/export/excel \
 | `DELETE` | `/api/scan/:jobId` | Abort a running scan |
 | `POST` | `/api/reports/:id/export/csv` | Export report as CSV |
 | `POST` | `/api/reports/:id/export/excel` | Export report as Excel |
+
+### Manual Audit
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `PATCH` | `/api/reports/:id/pages/:pageId/manual-audit` | Update page-level auditor notes |
+| `PATCH` | `/api/reports/:id/pages/:pageId/manual-audit/complete` | Mark or unmark audit as complete |
+| `PATCH` | `/api/reports/:id/pages/:pageId/manual-audit/checks/:checkId` | Update a check's status or notes |
+| `POST` | `/api/reports/:id/pages/:pageId/manual-audit/checks` | Add a custom check |
+| `DELETE` | `/api/reports/:id/pages/:pageId/manual-audit/checks/:checkId` | Delete a custom check |
+| `POST` | `/api/reports/:id/pages/:pageId/manual-audit/checks/:checkId/failures` | Add a failure instance |
+| `PATCH` | `/api/reports/:id/pages/:pageId/manual-audit/checks/:checkId/failures/:failureId` | Update a failure instance |
+| `DELETE` | `/api/reports/:id/pages/:pageId/manual-audit/checks/:checkId/failures/:failureId` | Delete a failure instance |
