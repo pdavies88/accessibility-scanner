@@ -93,6 +93,10 @@
 }
 
 @layer base {
+  /* Base font size — 112.5% = 18px at the default browser 16px root.
+     Using % rather than px respects user browser font-size preferences. */
+  html { font-size: 112.5%; }
+
   /* WCAG 1.4.12 — minimum line-height of 1.5× font size */
   body { line-height: 1.5; }
 
