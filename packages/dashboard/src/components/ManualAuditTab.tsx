@@ -34,20 +34,22 @@ const PREDEFINED_MAP = Object.fromEntries(PREDEFINED_CHECKS.map(c => [c.id, c]))
 // Pill colors
 // ---------------------------------------------------------------------------
 
+// 800 text on 100 background clears WCAG AA (4.5:1) for text-xs across all hues.
+// (700 on 100 fails for several — e.g. blue-700/blue-100 ≈ 3.8:1.)
 const CATEGORY_COLORS: Record<string, string> = {
-  'Keyboard & Focus':    'bg-blue-100   text-blue-700   border-blue-200',
-  'Images & Media':      'bg-orange-100 text-orange-700 border-orange-200',
-  'Color & Visual':      'bg-purple-100 text-purple-700 border-purple-200',
-  'Forms & Input':       'bg-green-100  text-green-700  border-green-200',
-  'Links & Navigation':  'bg-cyan-100   text-cyan-700   border-cyan-200',
-  'Content & Structure': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  'Video & Audio':       'bg-rose-100   text-rose-700   border-rose-200',
+  'Keyboard & Focus':    'bg-blue-100   text-blue-800   border-blue-200',
+  'Images & Media':      'bg-orange-100 text-orange-800 border-orange-200',
+  'Color & Visual':      'bg-purple-100 text-purple-800 border-purple-200',
+  'Forms & Input':       'bg-green-100  text-green-800  border-green-200',
+  'Links & Navigation':  'bg-cyan-100   text-cyan-800   border-cyan-200',
+  'Content & Structure': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  'Video & Audio':       'bg-rose-100   text-rose-800   border-rose-200',
 };
 
 const LEVEL_COLORS: Record<string, string> = {
-  A:   'bg-indigo-100 text-indigo-700 border-indigo-200',
-  AA:  'bg-violet-100 text-violet-700 border-violet-200',
-  AAA: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
+  A:   'bg-indigo-100  text-indigo-800  border-indigo-200',
+  AA:  'bg-violet-100  text-violet-800  border-violet-200',
+  AAA: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
 };
 
 // ---------------------------------------------------------------------------
@@ -312,7 +314,7 @@ function CustomCheckItem({
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-medium">{check.title}</p>
             {showMeta && (
-              <Badge variant="outline" className="text-xs h-4 px-1 py-0 font-normal bg-slate-100 text-slate-600 border-slate-200">
+              <Badge variant="outline" className="text-xs h-4 px-1 py-0 font-normal bg-slate-100 text-slate-700 border-slate-200">
                 Custom
               </Badge>
             )}
