@@ -33,6 +33,10 @@ import {
   AlignLeft,
   Video,
   ChevronDown,
+  Code2,
+  Upload,
+  Clipboard,
+  X,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -298,22 +302,80 @@ function CheckRow({
   showMeta,
   onStatusChange,
   onNotesChange,
+  onEvidenceChange,
 }: {
   check: ManualCheckResult;
   /** show level + category badges (used when the group doesn't already convey this) */
   showMeta?: boolean;
   onStatusChange: (status: ManualAuditStatus) => void;
   onNotesChange: (notes: string) => void;
+  onEvidenceChange: (codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
 }) {
   const [localNotes, setLocalNotes] = useState(check.notes ?? '');
   const [showQuestions, setShowQuestions] = useState(false);
+  const [showEvidence, setShowEvidence] = useState(
+    !!(check.codeSnippet || check.screenshotDataUrl),
+  );
+  const [localCode, setLocalCode] = useState(check.codeSnippet ?? '');
+  const [screenshot, setScreenshot] = useState<string | undefined>(check.screenshotDataUrl);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const meta = check.wcagCriterion ? PREDEFINED_MAP[check.wcagCriterion] : undefined;
   const questions = meta?.questions ?? [];
+
+  function commitCode(value: string) {
+    if (value !== (check.codeSnippet ?? '')) {
+      onEvidenceChange(value || undefined, screenshot);
+    }
+  }
+
+  function applyScreenshot(dataUrl: string) {
+    setScreenshot(dataUrl);
+    onEvidenceChange(localCode || undefined, dataUrl);
+  }
+
+  function removeScreenshot() {
+    setScreenshot(undefined);
+    onEvidenceChange(localCode || undefined, undefined);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const result = ev.target?.result;
+      if (typeof result === 'string') applyScreenshot(result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  async function handlePasteFromClipboard() {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const imageType = item.types.find(t => t.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const reader = new FileReader();
+          reader.onload = ev => {
+            const result = ev.target?.result;
+            if (typeof result === 'string') applyScreenshot(result);
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+      }
+    } catch {
+      // Clipboard API not available or denied — silently ignore
+    }
+  }
 
   return (
     <div className="border-b last:border-b-0 py-3 px-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
+          {/* Title row */}
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             {check.wcagCriterion && (
               <span className="font-mono text-xs text-muted-foreground shrink-0">
@@ -340,10 +402,12 @@ function CheckRow({
               </>
             )}
           </div>
+
           {check.description && (
             <p className="text-xs text-muted-foreground mb-2">{check.description}</p>
           )}
 
+          {/* How to test */}
           {questions.length > 0 && (
             <div className="mb-2">
               <button
@@ -368,19 +432,115 @@ function CheckRow({
             </div>
           )}
 
+          {/* Notes */}
           <input
             type="text"
             placeholder="Add notes…"
             value={localNotes}
             onChange={e => setLocalNotes(e.target.value)}
             onBlur={() => {
-              if (localNotes !== (check.notes ?? '')) {
-                onNotesChange(localNotes);
-              }
+              if (localNotes !== (check.notes ?? '')) onNotesChange(localNotes);
             }}
-            className="w-full text-xs border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50"
+            className="w-full text-xs border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50 mb-2"
           />
+
+          {/* Evidence toggle */}
+          <button
+            type="button"
+            onClick={() => setShowEvidence(v => !v)}
+            aria-expanded={showEvidence}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+          >
+            <ChevronDown
+              className={cn('h-3 w-3 transition-transform', showEvidence && 'rotate-180')}
+              aria-hidden="true"
+            />
+            Evidence
+            {(check.codeSnippet || check.screenshotDataUrl) && (
+              <span className="ml-1 text-primary">●</span>
+            )}
+          </button>
+
+          {/* Evidence panel */}
+          {showEvidence && (
+            <div className="mt-2 space-y-3 pl-1">
+              {/* Code snippet */}
+              <div className="space-y-1">
+                <label className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                  <Code2 className="h-3 w-3" aria-hidden="true" />
+                  Code snippet
+                </label>
+                <textarea
+                  value={localCode}
+                  onChange={e => setLocalCode(e.target.value)}
+                  onBlur={() => commitCode(localCode)}
+                  placeholder="Paste relevant HTML or code here…"
+                  rows={3}
+                  spellCheck={false}
+                  className="w-full font-mono text-xs rounded border border-border bg-muted/40 px-2 py-1.5 resize-y focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                />
+              </div>
+
+              {/* Screenshot */}
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                  <ImageIcon className="h-3 w-3" aria-hidden="true" />
+                  Screenshot
+                </span>
+                {screenshot ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={screenshot}
+                      alt="Screenshot of affected area"
+                      className="max-w-full max-h-48 rounded border border-border object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeScreenshot}
+                      aria-label="Remove screenshot"
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="h-3 w-3" />
+                      Upload
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      onClick={handlePasteFromClipboard}
+                    >
+                      <Clipboard className="h-3 w-3" />
+                      Paste from clipboard
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      aria-hidden="true"
+                      tabIndex={-1}
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
         <div className="shrink-0">
           <StatusSelect value={check.status} onChange={onStatusChange} />
         </div>
@@ -466,11 +626,13 @@ function CheckGroupSection({
   group,
   onStatusChange,
   onNotesChange,
+  onEvidenceChange,
   onDeleteCustomCheck,
 }: {
   group: CheckGroup;
   onStatusChange: (checkId: string, status: ManualAuditStatus) => void;
   onNotesChange: (checkId: string, notes: string) => void;
+  onEvidenceChange: (checkId: string, codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
   onDeleteCustomCheck: (checkId: string) => void;
 }) {
   const headingId = `group-${group.id}`;
@@ -512,6 +674,7 @@ function CheckGroupSection({
                   showMeta
                   onStatusChange={status => onStatusChange(check.id, status)}
                   onNotesChange={notes => onNotesChange(check.id, notes)}
+                  onEvidenceChange={(code, img) => onEvidenceChange(check.id, code, img)}
                 />
               </div>
             ),
@@ -526,6 +689,7 @@ function CheckGroupSection({
               showMeta
               onStatusChange={status => onStatusChange(check.id, status)}
               onNotesChange={notes => onNotesChange(check.id, notes)}
+              onEvidenceChange={(code, img) => onEvidenceChange(check.id, code, img)}
             />
           ))}
         </div>
@@ -679,6 +843,7 @@ interface ManualAuditTabProps {
   audit: ManualAudit;
   onStatusChange: (checkId: string, status: ManualAuditStatus) => void;
   onNotesChange: (checkId: string, notes: string) => void;
+  onEvidenceChange: (checkId: string, codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
   onAddCustomCheck: (data: {
     title: string;
     description?: string;
@@ -694,6 +859,7 @@ export function ManualAuditTab({
   audit,
   onStatusChange,
   onNotesChange,
+  onEvidenceChange,
   onAddCustomCheck,
   onDeleteCustomCheck,
   onAuditorNotesChange,
@@ -774,6 +940,7 @@ export function ManualAuditTab({
           group={group}
           onStatusChange={onStatusChange}
           onNotesChange={onNotesChange}
+          onEvidenceChange={onEvidenceChange}
           onDeleteCustomCheck={onDeleteCustomCheck}
         />
       ))}

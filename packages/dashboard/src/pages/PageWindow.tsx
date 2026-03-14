@@ -17,7 +17,7 @@ export function PageWindow() {
 
   const page = report?.results.find(r => r.id === pageId) ?? null;
 
-  const { audit, updateCheck, updateNotes, addCustomCheck, deleteCustomCheck, updateAuditorNotes } =
+  const { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes } =
     useManualAudit(id ?? '', pageId ?? '', page?.manualAudit);
 
   const [activeTab, setActiveTab] = useState('automated');
@@ -175,6 +175,7 @@ export function PageWindow() {
             audit={audit}
             onStatusChange={updateCheck}
             onNotesChange={updateNotes}
+            onEvidenceChange={updateEvidence}
             onAddCustomCheck={addCustomCheck}
             onDeleteCustomCheck={deleteCustomCheck}
             onAuditorNotesChange={updateAuditorNotes}

@@ -9,6 +9,8 @@ export interface ManualCheckResult {
   description?: string;
   status: ManualAuditStatus;
   notes?: string;
+  codeSnippet?: string;      // relevant HTML/code fragment
+  screenshotDataUrl?: string; // base64 data URL of screenshot
   impact?: 'minor' | 'moderate' | 'serious' | 'critical';
   updatedAt: string;         // ISO date
 }

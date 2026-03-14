@@ -112,6 +112,32 @@ export function useManualAudit(
     [reportId, pageId],
   );
 
+  const updateEvidence = useCallback(
+    async (checkId: string, codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => {
+      setAudit(prev => ({
+        ...prev,
+        checks: prev.checks.map(c =>
+          c.id === checkId
+            ? { ...c, codeSnippet, screenshotDataUrl, updatedAt: new Date().toISOString() }
+            : c,
+        ),
+      }));
+
+      try {
+        const check = audit.checks.find(c => c.id === checkId);
+        if (!check) return;
+        await fetch(`/api/reports/${reportId}/pages/${pageId}/manual-audit/checks/${checkId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: check.status, codeSnippet, screenshotDataUrl }),
+        });
+      } catch (err) {
+        console.error('Failed to update evidence:', err);
+      }
+    },
+    [reportId, pageId, audit],
+  );
+
   const updateAuditorNotes = useCallback(
     async (notes: string) => {
       setAudit(prev => ({ ...prev, auditorNotes: notes }));
@@ -129,5 +155,5 @@ export function useManualAudit(
     [reportId, pageId],
   );
 
-  return { audit, updateCheck, updateNotes, addCustomCheck, deleteCustomCheck, updateAuditorNotes };
+  return { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes };
 }

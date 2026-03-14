@@ -136,11 +136,18 @@ app.patch('/api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId', a
 
     if (!page.manualAudit) page.manualAudit = initManualAudit();
 
-    const { status, notes } = req.body as { status: ManualAuditStatus; notes?: string };
+    const { status, notes, codeSnippet, screenshotDataUrl } = req.body as {
+      status: ManualAuditStatus;
+      notes?: string;
+      codeSnippet?: string;
+      screenshotDataUrl?: string;
+    };
     const check = page.manualAudit.checks.find(c => c.id === req.params.checkId);
     if (check) {
       check.status = status;
       if (notes !== undefined) check.notes = notes;
+      if (codeSnippet !== undefined) check.codeSnippet = codeSnippet;
+      if (screenshotDataUrl !== undefined) check.screenshotDataUrl = screenshotDataUrl;
       check.updatedAt = new Date().toISOString();
     }
     page.manualAudit.lastUpdated = new Date().toISOString();
