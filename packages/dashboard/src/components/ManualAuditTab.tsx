@@ -152,6 +152,55 @@ const STATUS_COLORS: Record<ManualAuditStatus, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Level filter
+// ---------------------------------------------------------------------------
+
+type LevelFilter = 'all' | 'A' | 'AA' | 'AAA';
+
+const LEVEL_FILTER_OPTIONS: { value: LevelFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'A',   label: 'A' },
+  { value: 'AA',  label: 'AA' },
+  { value: 'AAA', label: 'AAA' },
+];
+
+function LevelFilterSelector({
+  value,
+  onChange,
+}: {
+  value: LevelFilter;
+  onChange: (v: LevelFilter) => void;
+}) {
+  return (
+    <div className="flex items-center gap-0.5">
+      <span className="text-xs text-muted-foreground mr-2 shrink-0">Level</span>
+      <div
+        className="inline-flex items-center rounded-md border bg-muted p-0.5 gap-0.5"
+        role="group"
+        aria-label="Filter by WCAG level"
+      >
+        {LEVEL_FILTER_OPTIONS.map(o => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(o.value)}
+            aria-pressed={value === o.value}
+            className={cn(
+              'px-2.5 py-1 text-xs rounded font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              value === o.value
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground cursor-pointer',
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ViewModeSelector
 // ---------------------------------------------------------------------------
 
@@ -599,18 +648,25 @@ export function ManualAuditTab({
 }: ManualAuditTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('wcag');
+  const [levelFilter, setLevelFilter] = useState<LevelFilter>('all');
   const [auditorNotes, setAuditorNotes] = useState(audit.auditorNotes ?? '');
 
-  const customChecks = audit.checks.filter(c => c.type === 'custom');
-  const groups = buildGroups(audit, viewMode);
+  // Apply level filter — custom checks are always included regardless of level
+  const visibleChecks = levelFilter === 'all'
+    ? audit.checks
+    : audit.checks.filter(c => c.type === 'custom' || c.level === levelFilter);
+  const filteredAudit = { ...audit, checks: visibleChecks };
 
-  // Progress stats (always across all checks)
-  const total = audit.checks.length;
+  const customChecks = visibleChecks.filter(c => c.type === 'custom');
+  const groups = buildGroups(filteredAudit, viewMode);
+
+  // Progress stats scoped to the current level filter
+  const total = visibleChecks.length;
   const counts = {
-    pass:         audit.checks.filter(c => c.status === 'pass').length,
-    fail:         audit.checks.filter(c => c.status === 'fail').length,
-    na:           audit.checks.filter(c => c.status === 'na').length,
-    'not-tested': audit.checks.filter(c => c.status === 'not-tested').length,
+    pass:         visibleChecks.filter(c => c.status === 'pass').length,
+    fail:         visibleChecks.filter(c => c.status === 'fail').length,
+    na:           visibleChecks.filter(c => c.status === 'na').length,
+    'not-tested': visibleChecks.filter(c => c.status === 'not-tested').length,
   };
   const checked = total - counts['not-tested'];
   const progressPct = total > 0 ? Math.round((checked / total) * 100) : 0;
@@ -653,8 +709,11 @@ export function ManualAuditTab({
         </div>
       </div>
 
-      {/* View mode selector */}
-      <ViewModeSelector value={viewMode} onChange={setViewMode} />
+      {/* Controls row */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <ViewModeSelector value={viewMode} onChange={setViewMode} />
+        <LevelFilterSelector value={levelFilter} onChange={setLevelFilter} />
+      </div>
 
       {/* Check groups */}
       {groups.map(group => (
