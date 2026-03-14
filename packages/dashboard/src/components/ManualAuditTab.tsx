@@ -303,6 +303,8 @@ function CheckRow({
   onStatusChange,
   onNotesChange,
   onEvidenceChange,
+  onLevelClick,
+  onCategoryClick,
 }: {
   check: ManualCheckResult;
   /** show level + category badges (used when the group doesn't already convey this) */
@@ -310,6 +312,8 @@ function CheckRow({
   onStatusChange: (status: ManualAuditStatus) => void;
   onNotesChange: (notes: string) => void;
   onEvidenceChange: (codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
+  onLevelClick?: (level: 'A' | 'AA' | 'AAA') => void;
+  onCategoryClick?: (category: string) => void;
 }) {
   const [localNotes, setLocalNotes] = useState(check.notes ?? '');
   const [showQuestions, setShowQuestions] = useState(false);
@@ -378,22 +382,44 @@ function CheckRow({
           {/* Title row */}
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             {check.wcagCriterion && (
-              <span className="font-mono text-xs text-muted-foreground shrink-0">
+              <span className="font-mono text-sm text-muted-foreground shrink-0">
                 {check.wcagCriterion}
               </span>
             )}
-            <span className="text-sm font-medium">{check.title}</span>
+            <span className="text-base font-medium">{check.title}</span>
             {showMeta && (
               <>
                 {check.level && (
-                  <Badge variant="outline" className={cn('text-xs h-4 px-1 py-0', LEVEL_COLORS[check.level])}>
-                    {check.level}
-                  </Badge>
+                  onLevelClick ? (
+                    <button
+                      type="button"
+                      onClick={() => onLevelClick(check.level as 'A' | 'AA' | 'AAA')}
+                      aria-label={`Filter by level ${check.level}`}
+                      className={cn('inline-flex items-center rounded border text-xs h-5 px-1.5 py-0 font-medium transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer', LEVEL_COLORS[check.level])}
+                    >
+                      {check.level}
+                    </button>
+                  ) : (
+                    <Badge variant="outline" className={cn('text-xs h-5 px-1.5 py-0', LEVEL_COLORS[check.level])}>
+                      {check.level}
+                    </Badge>
+                  )
                 )}
                 {meta?.category && (() => {
                   const Icon = CATEGORY_ICONS[meta.category];
-                  return (
-                    <Badge variant="outline" className={cn('text-xs h-4 px-1 py-0 font-normal gap-1', CATEGORY_COLORS[meta.category])}>
+                  const colorClass = CATEGORY_COLORS[meta.category];
+                  return onCategoryClick ? (
+                    <button
+                      type="button"
+                      onClick={() => onCategoryClick(meta.category)}
+                      aria-label={`Filter by category ${meta.category}`}
+                      className={cn('inline-flex items-center gap-1 rounded border text-xs h-5 px-1.5 py-0 font-normal transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer', colorClass)}
+                    >
+                      {Icon && <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />}
+                      {meta.category}
+                    </button>
+                  ) : (
+                    <Badge variant="outline" className={cn('text-xs h-5 px-1.5 py-0 font-normal gap-1', colorClass)}>
                       {Icon && <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />}
                       {meta.category}
                     </Badge>
@@ -404,7 +430,7 @@ function CheckRow({
           </div>
 
           {check.description && (
-            <p className="text-xs text-muted-foreground mb-2">{check.description}</p>
+            <p className="text-sm text-muted-foreground mb-2">{check.description}</p>
           )}
 
           {/* How to test */}
@@ -537,7 +563,7 @@ function CheckRow({
             onBlur={() => {
               if (localNotes !== (check.notes ?? '')) onNotesChange(localNotes);
             }}
-            className="w-full text-xs border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 mt-2 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50"
+            className="w-full text-sm border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 mt-2 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50"
           />
         </div>
 
@@ -628,12 +654,16 @@ function CheckGroupSection({
   onNotesChange,
   onEvidenceChange,
   onDeleteCustomCheck,
+  onLevelClick,
+  onCategoryClick,
 }: {
   group: CheckGroup;
   onStatusChange: (checkId: string, status: ManualAuditStatus) => void;
   onNotesChange: (checkId: string, notes: string) => void;
   onEvidenceChange: (checkId: string, codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
   onDeleteCustomCheck: (checkId: string) => void;
+  onLevelClick?: (level: 'A' | 'AA' | 'AAA') => void;
+  onCategoryClick?: (category: string) => void;
 }) {
   const headingId = `group-${group.id}`;
 
@@ -675,6 +705,8 @@ function CheckGroupSection({
                   onStatusChange={status => onStatusChange(check.id, status)}
                   onNotesChange={notes => onNotesChange(check.id, notes)}
                   onEvidenceChange={(code, img) => onEvidenceChange(check.id, code, img)}
+                  onLevelClick={onLevelClick}
+                  onCategoryClick={onCategoryClick}
                 />
               </div>
             ),
@@ -690,6 +722,8 @@ function CheckGroupSection({
               onStatusChange={status => onStatusChange(check.id, status)}
               onNotesChange={notes => onNotesChange(check.id, notes)}
               onEvidenceChange={(code, img) => onEvidenceChange(check.id, code, img)}
+              onLevelClick={onLevelClick}
+              onCategoryClick={onCategoryClick}
             />
           ))}
         </div>
@@ -867,12 +901,25 @@ export function ManualAuditTab({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('wcag');
   const [levelFilter, setLevelFilter] = useState<LevelFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [auditorNotes, setAuditorNotes] = useState(audit.auditorNotes ?? '');
 
-  // Apply level filter — custom checks are always included regardless of level
-  const visibleChecks = levelFilter === 'all'
-    ? audit.checks
-    : audit.checks.filter(c => c.type === 'custom' || c.level === levelFilter);
+  function handleLevelClick(level: 'A' | 'AA' | 'AAA') {
+    setLevelFilter(prev => prev === level ? 'all' : level);
+  }
+
+  function handleCategoryClick(category: string) {
+    setCategoryFilter(prev => prev === category ? null : category);
+    setViewMode('category');
+  }
+
+  // Apply level + category filters — custom checks always visible
+  const visibleChecks = audit.checks.filter(c => {
+    if (c.type === 'custom') return true;
+    if (levelFilter !== 'all' && c.level !== levelFilter) return false;
+    if (categoryFilter && PREDEFINED_MAP[c.id]?.category !== categoryFilter) return false;
+    return true;
+  });
   const filteredAudit = { ...audit, checks: visibleChecks };
 
   const customChecks = visibleChecks.filter(c => c.type === 'custom');
@@ -928,9 +975,34 @@ export function ManualAuditTab({
       </div>
 
       {/* Controls row */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <ViewModeSelector value={viewMode} onChange={setViewMode} />
-        <LevelFilterSelector value={levelFilter} onChange={setLevelFilter} />
+      <div className="space-y-2">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <ViewModeSelector value={viewMode} onChange={setViewMode} />
+          <LevelFilterSelector value={levelFilter} onChange={setLevelFilter} />
+        </div>
+        {categoryFilter && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Filtered by:</span>
+            {(() => {
+              const Icon = CATEGORY_ICONS[categoryFilter];
+              return (
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter(null)}
+                  aria-label={`Remove filter: ${categoryFilter}`}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded border text-xs px-2 py-0.5 font-normal transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                    CATEGORY_COLORS[categoryFilter],
+                  )}
+                >
+                  {Icon && <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />}
+                  {categoryFilter}
+                  <X className="h-3 w-3 ml-0.5" aria-hidden="true" />
+                </button>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Check groups */}
@@ -942,6 +1014,8 @@ export function ManualAuditTab({
           onNotesChange={onNotesChange}
           onEvidenceChange={onEvidenceChange}
           onDeleteCustomCheck={onDeleteCustomCheck}
+          onLevelClick={handleLevelClick}
+          onCategoryClick={handleCategoryClick}
         />
       ))}
 

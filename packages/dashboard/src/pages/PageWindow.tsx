@@ -64,7 +64,7 @@ export function PageWindow() {
       : `Manual Audit (${audit.checks.length - manualNotTestedCount} checked)`;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 text-base">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate(`/reports/${id}?tab=pages`)}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Back to report
