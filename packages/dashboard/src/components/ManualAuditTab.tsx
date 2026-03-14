@@ -432,18 +432,6 @@ function CheckRow({
             </div>
           )}
 
-          {/* Notes */}
-          <input
-            type="text"
-            placeholder="Add notes…"
-            value={localNotes}
-            onChange={e => setLocalNotes(e.target.value)}
-            onBlur={() => {
-              if (localNotes !== (check.notes ?? '')) onNotesChange(localNotes);
-            }}
-            className="w-full text-xs border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50 mb-2"
-          />
-
           {/* Evidence toggle */}
           <button
             type="button"
@@ -539,6 +527,18 @@ function CheckRow({
               </div>
             </div>
           )}
+
+          {/* Notes */}
+          <input
+            type="text"
+            placeholder="Add notes…"
+            value={localNotes}
+            onChange={e => setLocalNotes(e.target.value)}
+            onBlur={() => {
+              if (localNotes !== (check.notes ?? '')) onNotesChange(localNotes);
+            }}
+            className="w-full text-xs border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 mt-2 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50"
+          />
         </div>
 
         <div className="shrink-0">
