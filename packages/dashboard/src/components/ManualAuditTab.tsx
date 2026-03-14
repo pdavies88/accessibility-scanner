@@ -22,7 +22,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2 } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Keyboard,
+  Image as ImageIcon,
+  Palette,
+  FormInput,
+  Link,
+  AlignLeft,
+  Video,
+} from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Lookup map: check id → predefined metadata (category, priority, level)
@@ -44,6 +54,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Links & Navigation':  'bg-cyan-100   text-cyan-800   border-cyan-200',
   'Content & Structure': 'bg-yellow-100 text-yellow-800 border-yellow-200',
   'Video & Audio':       'bg-rose-100   text-rose-800   border-rose-200',
+};
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  'Keyboard & Focus':    Keyboard,
+  'Images & Media':      ImageIcon,
+  'Color & Visual':      Palette,
+  'Forms & Input':       FormInput,
+  'Links & Navigation':  Link,
+  'Content & Structure': AlignLeft,
+  'Video & Audio':       Video,
 };
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -305,11 +325,15 @@ function CheckRow({
                     {check.level}
                   </Badge>
                 )}
-                {meta?.category && (
-                  <Badge variant="outline" className={cn('text-xs h-4 px-1 py-0 font-normal', CATEGORY_COLORS[meta.category])}>
-                    {meta.category}
-                  </Badge>
-                )}
+                {meta?.category && (() => {
+                  const Icon = CATEGORY_ICONS[meta.category];
+                  return (
+                    <Badge variant="outline" className={cn('text-xs h-4 px-1 py-0 font-normal gap-1', CATEGORY_COLORS[meta.category])}>
+                      {Icon && <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />}
+                      {meta.category}
+                    </Badge>
+                  );
+                })()}
               </>
             )}
           </div>
