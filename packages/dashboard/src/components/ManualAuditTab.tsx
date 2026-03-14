@@ -666,25 +666,49 @@ function CheckGroupSection({
   onCategoryClick?: (category: string) => void;
 }) {
   const headingId = `group-${group.id}`;
+  const [collapsed, setCollapsed] = useState(true);
+
+  const failCount       = group.checks.filter(c => c.status === 'fail').length;
+  const passCount       = group.checks.filter(c => c.status === 'pass').length;
+  const naCount         = group.checks.filter(c => c.status === 'na').length;
+  const notTestedCount  = group.checks.filter(c => c.status === 'not-tested').length;
 
   return (
     <section aria-labelledby={headingId}>
-      <div className="mb-2">
-        <h2
-          id={headingId}
-          className="text-sm font-semibold text-muted-foreground uppercase tracking-wide"
-        >
-          {group.label}
-          <span className="ml-1.5 normal-case font-normal">
+      <button
+        type="button"
+        id={headingId}
+        onClick={() => setCollapsed(v => !v)}
+        aria-expanded={!collapsed}
+        className="w-full flex items-center justify-between gap-3 mb-2 group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <ChevronDown
+            className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', !collapsed && 'rotate-180')}
+            aria-hidden="true"
+          />
+          <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide group-hover:text-foreground transition-colors">
+            {group.label}
+          </span>
+          <span className="text-xs font-normal normal-case text-muted-foreground">
             ({group.checks.length})
           </span>
-        </h2>
-        {group.description && (
-          <p className="text-xs text-muted-foreground mt-0.5">{group.description}</p>
+        </div>
+        {collapsed && (
+          <div className="flex items-center gap-3 text-xs shrink-0">
+            {failCount > 0      && <span className="text-red-600 font-medium">{failCount} fail</span>}
+            {passCount > 0      && <span className="text-green-600">{passCount} pass</span>}
+            {naCount > 0        && <span className="text-muted-foreground">{naCount} n/a</span>}
+            {notTestedCount > 0 && <span className="text-muted-foreground">{notTestedCount} not tested</span>}
+          </div>
         )}
-      </div>
+      </button>
+      {!collapsed && group.description && (
+        <p className="text-xs text-muted-foreground mb-2 pl-6">{group.description}</p>
+      )}
 
-      {group.mixed ? (
+
+      {!collapsed && (group.mixed ? (
         // Status view — mixed predefined + custom, use appropriate row type
         <div className="space-y-2">
           {group.checks.map(check =>
@@ -727,7 +751,7 @@ function CheckGroupSection({
             />
           ))}
         </div>
-      )}
+      ))}
     </section>
   );
 }
