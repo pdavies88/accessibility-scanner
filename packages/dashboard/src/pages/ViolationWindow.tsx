@@ -39,9 +39,25 @@ export function ViolationWindow() {
     minor: 'outline',
   } as const;
 
+  function wcagCriteria(tags: string[]): string[] {
+    return tags
+      .filter(t => /^wcag\d{3,}$/.test(t))
+      .map(t => {
+        const d = t.replace('wcag', '');
+        return `${d[0]}.${d[1]}.${d.slice(2)}`;
+      });
+  }
+
+  const criteria = wcagCriteria(violation.tags);
+
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-4xl">
-      <h1 className="text-2xl font-bold">{violation.help}</h1>
+      <h1 className="text-2xl font-bold">
+        {criteria.length > 0 && (
+          <span className="text-muted-foreground font-mono mr-2">{criteria.join(', ')}</span>
+        )}
+        {violation.help}
+      </h1>
 
       <div className="flex flex-wrap gap-4">
         <div>

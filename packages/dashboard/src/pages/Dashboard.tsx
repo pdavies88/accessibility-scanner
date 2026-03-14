@@ -294,21 +294,26 @@ export function Dashboard() {
               </Button>
             </div>
           </div>
+          <div className="rounded-md border border-border bg-muted/40 p-3 text-sm space-y-1">
+            <p className="font-medium">⚠ Before you crawl</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+              <li>Crawling follows internal links from your starting URL downward — keep the path specific to avoid scanning the whole site.</li>
+              <li>~200 pages takes 5–10 min at default settings.</li>
+              <li>500 pages can take 30+ min and uses significantly more memory.</li>
+            </ul>
+          </div>
           <div className="flex flex-col gap-1.5 w-32">
             <Label htmlFor="max-pages">Max pages</Label>
             <Input
               id="max-pages"
               type="number"
               min="1"
-              max="1000"
+              max="500"
               value={maxPages}
               onChange={e => setMaxPages(e.target.value)}
               disabled={scanning}
             />
           </div>
-          <p className="text-sm text-muted-foreground">
-            The crawler will follow internal links and scan up to the max number of pages found.
-          </p>
         </div>
       )}
 
@@ -385,14 +390,7 @@ export function Dashboard() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Accessibility Reports</h1>
-        {hasReports && !showScanForm && (
-          <Button onClick={() => { resetForm(); setShowScanForm(true); }}>
-            New Scan
-          </Button>
-        )}
-      </div>
+      <h1 className="text-3xl font-bold mb-6">Accessibility Reports</h1>
 
       {(!hasReports || showScanForm) && !loading && (
         <Card className="mb-8">

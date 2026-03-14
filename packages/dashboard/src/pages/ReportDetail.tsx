@@ -60,6 +60,20 @@ export function ReportDetail() {
     ([impact, count]) => ({ impact, count })
   );
 
+  // Build a lookup from violation ID → violation object for display enrichment
+  const violationMeta = report.results
+    .flatMap(r => r.violations)
+    .reduce((acc, v) => {
+      if (!acc[v.id]) acc[v.id] = v;
+      return acc;
+    }, {} as Record<string, import('@accessibility-scanner/shared').AxeViolation>);
+
+  function wcagCriteria(tags: string[]): string[] {
+    return tags
+      .filter(t => /^wcag\d{3,}$/.test(t))
+      .map(t => { const d = t.replace('wcag', ''); return `${d[0]}.${d[1]}.${d.slice(2)}`; });
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6 flex justify-between items-start">
@@ -182,20 +196,30 @@ export function ReportDetail() {
                 {Object.entries(report.summary.violationsByType)
                   .sort(([, a], [, b]) => b - a)
                   .slice(0, 10)
-                  .map(([type, count]) => (
-                    <div key={type} className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{type}</p>
-                        <Progress 
-                          value={(count / report.summary.totalViolations) * 100} 
-                          className="h-2"
-                        />
+                  .map(([type, count]) => {
+                    const meta = violationMeta[type];
+                    const criteria = meta ? wcagCriteria(meta.tags) : [];
+                    const level = meta?.level ?? null;
+                    const label = meta ? meta.help : type;
+                    const suffix = criteria.length > 0
+                      ? `${criteria.join(', ')} ${level && level !== 'best-practice' ? level : 'Best Practice'}`
+                      : level && level !== 'best-practice' ? level : 'Best Practice';
+                    return (
+                      <div key={type} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2 mb-0.5">
+                            <p className="text-sm font-medium">{label}</p>
+                            <span className="text-xs text-muted-foreground font-mono shrink-0">{suffix}</span>
+                          </div>
+                          <Progress
+                            value={(count / report.summary.totalViolations) * 100}
+                            className="h-2"
+                          />
+                        </div>
+                        <span className="text-sm w-12 text-right">{count}</span>
                       </div>
-                      <span className="text-sm  w-12 text-right">
-                        {count}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </CardContent>
           </Card>

@@ -35,6 +35,15 @@ export function PageWindow() {
     minor: 'outline',
   } as const;
 
+  function wcagCriteria(tags: string[]): string[] {
+    return tags
+      .filter(t => /^wcag\d{3,}$/.test(t))
+      .map(t => {
+        const d = t.replace('wcag', '');
+        return `${d[0]}.${d[1]}.${d.slice(2)}`;
+      });
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-5xl">
       <div>
@@ -68,6 +77,8 @@ export function PageWindow() {
               <TableRow>
                 <TableHead>Violation</TableHead>
                 <TableHead>Impact</TableHead>
+                <TableHead>Level</TableHead>
+                <TableHead>WCAG Criteria</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Summary</TableHead>
                 <TableHead>HTML</TableHead>
@@ -84,11 +95,25 @@ export function PageWindow() {
                       <>
                         <TableCell rowSpan={nodes.length} className="min-w-[180px]">
                           <ExternalLink href={v.helpUrl} className="font-medium">
-                            {v.help}
+                            {[...wcagCriteria(v.tags), v.help].filter(Boolean).join(' — ')}
                           </ExternalLink>
                         </TableCell>
                         <TableCell rowSpan={nodes.length}>
                           <Badge variant={impactColors[v.impact]}>{v.impact}</Badge>
+                        </TableCell>
+                        <TableCell rowSpan={nodes.length}>
+                          {v.level
+                            ? <Badge variant="outline">{v.level}</Badge>
+                            : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell rowSpan={nodes.length} className="min-w-[120px]">
+                          <div className="flex flex-wrap gap-1">
+                            {wcagCriteria(v.tags).length > 0
+                              ? wcagCriteria(v.tags).map(c => (
+                                  <Badge key={c} variant="outline" className="font-mono text-xs">{c}</Badge>
+                                ))
+                              : <span className="text-muted-foreground">—</span>}
+                          </div>
                         </TableCell>
                       </>
                     )}
