@@ -1,6 +1,7 @@
 export interface ScanResult {
   id: string;
   url: string;
+  title?: string;
   timestamp: Date;
   violations: AxeViolation[];
   passes: number;
@@ -33,6 +34,7 @@ export interface ViolationNode {
 export interface ScanReport {
   id: string;
   sitemap: string;
+  pageTitle?: string;
   startTime: Date;
   endTime: Date;
   results: ScanResult[];

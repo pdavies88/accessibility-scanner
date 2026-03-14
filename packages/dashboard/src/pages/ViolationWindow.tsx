@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useReport } from '@/hooks/useReport';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ExternalLink } from '@/components/ExternalLink';
+import { X, ArrowLeft } from 'lucide-react';
 
 export function ViolationWindow() {
   const { id, violationId } = useParams<{ id: string; violationId: string }>();
   const { report, loading, error } = useReport(id);
+  const navigate = useNavigate();
 
   const allInstances = report
     ? report.results.flatMap(result =>
@@ -51,7 +54,15 @@ export function ViolationWindow() {
   const criteria = wcagCriteria(violation.tags);
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-4xl">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/reports/${id}?tab=pages`)}>
+          <ArrowLeft className="mr-1 h-4 w-4" /> Back to report
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
       <h1 className="text-2xl font-bold">
         {criteria.length > 0 && (
           <span className="text-muted-foreground font-mono mr-2">{criteria.join(', ')}</span>

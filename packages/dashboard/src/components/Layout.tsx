@@ -85,8 +85,9 @@ export function Layout({ children }: Props) {
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
-  function reportNavLabel(sitemap: string) {
-    try { return new URL(sitemap).hostname; } catch { return sitemap; }
+  function reportNavLabel(report: { sitemap: string; pageTitle?: string }) {
+    if (report.pageTitle) return report.pageTitle;
+    try { return new URL(report.sitemap).hostname; } catch { return report.sitemap; }
   }
 
   return (
@@ -144,7 +145,7 @@ export function Layout({ children }: Props) {
                   <p className="px-4 py-3 text-sm text-muted-foreground">No reports yet.</p>
                 ) : (
                   reports.map(report => {
-                    const label = reportNavLabel(report.sitemap);
+                    const label = reportNavLabel(report);
                     const isActive = report.id === activeReportId;
                     return (
                       <a
@@ -158,9 +159,6 @@ export function Layout({ children }: Props) {
                         }`}
                       >
                         <span className="truncate">{label}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {new Date(report.startTime).toLocaleDateString()}
-                        </span>
                       </a>
                     );
                   })

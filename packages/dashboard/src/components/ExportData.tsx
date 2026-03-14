@@ -103,7 +103,6 @@ export function ExportData({ report }: ExportDataProps) {
             <Input
               id="tasklist-name"
               type="text"
-              placeholder="Accessibility Updates"
               value={tasklistName}
               onChange={e => setTasklistName(e.target.value)}
             />
@@ -114,7 +113,6 @@ export function ExportData({ report }: ExportDataProps) {
             <Input
               id="file-name"
               type="text"
-              placeholder={`accessibility-issues-${report.id}`}
               value={fileName}
               onChange={e => setFileName(e.target.value)}
             />

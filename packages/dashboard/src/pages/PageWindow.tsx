@@ -1,13 +1,16 @@
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useReport } from '@/hooks/useReport';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink } from '@/components/ExternalLink';
+import { X, ArrowLeft } from 'lucide-react';
 
 export function PageWindow() {
   const { id, pageId } = useParams<{ id: string; pageId: string }>();
   const { report, loading, error } = useReport(id);
+  const navigate = useNavigate();
 
   const page = report?.results.find(r => r.id === pageId) ?? null;
 
@@ -45,13 +48,18 @@ export function PageWindow() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6 max-w-5xl">
-      <div>
-        <p className="text-xs text-muted-foreground mb-1">Page URL</p>
-        <h1 className="text-xl font-bold break-all">
-          <ExternalLink href={page.url}>{page.url}</ExternalLink>
-        </h1>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/reports/${id}?tab=pages`)}>
+          <ArrowLeft className="mr-1 h-4 w-4" /> Back to report
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <X className="h-4 w-4" />
+        </Button>
       </div>
+      <h1 className="text-xl font-bold break-all">
+        <ExternalLink href={page.url}>{page.url}</ExternalLink>
+      </h1>
 
       <div className="flex flex-wrap gap-4 text-sm">
         <div>

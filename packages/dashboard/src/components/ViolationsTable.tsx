@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { buttonVariants } from '@/components/ui/button';
 import { ScanReport, AxeViolation } from '@accessibility-scanner/shared';
 import {
   Table,
@@ -118,20 +120,13 @@ export function ViolationsTable({ report, initialImpactFilter = '' }: Violations
               <TableCell>{count}</TableCell>
               <TableCell>{new Set(urls).size}</TableCell>
               <TableCell>
-                <Button
-                  size="sm"
-                  variant="default"
+                <Link
+                  to={`/reports/${report.id}/violation/${violation.id}`}
+                  className={buttonVariants({ variant: 'default', size: 'sm' })}
                   aria-label={`View details for violation: ${violation.help}`}
-                  onClick={() =>
-                    window.open(
-                      `/reports/${report.id}/violation/${violation.id}`,
-                      '_blank',
-                      'noopener,noreferrer'
-                    )
-                  }
                 >
-                  Details<span className="sr-only"> (opens in new window)</span>
-                </Button>
+                  Details
+                </Link>
               </TableCell>
             </TableRow>
           ))}
