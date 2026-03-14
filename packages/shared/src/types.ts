@@ -1,3 +1,24 @@
+export type ManualAuditStatus = 'pass' | 'fail' | 'na' | 'not-tested';
+
+export interface ManualCheckResult {
+  id: string;                // wcagCriterion for predefined (e.g. "1.1.1"), UUID for custom
+  type: 'wcag' | 'custom';
+  wcagCriterion?: string;    // e.g. "1.1.1"
+  level?: 'A' | 'AA' | 'AAA';
+  title: string;
+  description?: string;
+  status: ManualAuditStatus;
+  notes?: string;
+  impact?: 'minor' | 'moderate' | 'serious' | 'critical';
+  updatedAt: string;         // ISO date
+}
+
+export interface ManualAudit {
+  lastUpdated: string;
+  auditorNotes?: string;
+  checks: ManualCheckResult[];
+}
+
 export interface ScanResult {
   id: string;
   url: string;
@@ -7,6 +28,7 @@ export interface ScanResult {
   passes: number;
   incomplete: number;
   inapplicable: number;
+  manualAudit?: ManualAudit;
 }
 
 export interface AxeViolation {

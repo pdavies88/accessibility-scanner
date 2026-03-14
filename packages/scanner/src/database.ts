@@ -66,6 +66,15 @@ export class DatabaseService {
     return true;
   }
 
+  async updateReport(report: ScanReport): Promise<boolean> {
+    const data = await this.read();
+    const idx = data.reports.findIndex(r => r.id === report.id);
+    if (idx === -1) return false;
+    data.reports[idx] = report;
+    await this.write(data);
+    return true;
+  }
+
   /**
    * Removes all stored reports. Useful when you only need a
    * single snapshot and want to start fresh between runs.

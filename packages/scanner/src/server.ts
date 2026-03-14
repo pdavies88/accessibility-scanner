@@ -9,6 +9,7 @@ import { DatabaseService } from './database.js';
 import { Reporter } from './exporter.js';
 import { SitemapScanner } from './scanner.js';
 import { crawlSite } from './crawler.js';
+import { createDefaultChecks, ManualAudit, ManualAuditStatus, ManualCheckResult } from '@accessibility-scanner/shared';
 
 const app = express();
 const db = new DatabaseService();
@@ -110,6 +111,127 @@ app.post('/api/reports/:id/export/excel', async (req, res) => {
   } catch (error) {
     console.error('Excel export error:', error);
     return res.status(500).json({ error: 'Excel export failed' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Manual Audit
+// ---------------------------------------------------------------------------
+
+function initManualAudit(): ManualAudit {
+  return {
+    lastUpdated: new Date().toISOString(),
+    checks: createDefaultChecks(),
+  };
+}
+
+// PATCH /api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId
+app.patch('/api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page) return res.status(404).json({ error: 'Page not found' });
+
+    if (!page.manualAudit) page.manualAudit = initManualAudit();
+
+    const { status, notes } = req.body as { status: ManualAuditStatus; notes?: string };
+    const check = page.manualAudit.checks.find(c => c.id === req.params.checkId);
+    if (check) {
+      check.status = status;
+      if (notes !== undefined) check.notes = notes;
+      check.updatedAt = new Date().toISOString();
+    }
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.json({ manualAudit: page.manualAudit });
+  } catch (err) {
+    console.error('Manual audit update error:', err);
+    return res.status(500).json({ error: 'Failed to update check' });
+  }
+});
+
+// POST /api/reports/:reportId/pages/:pageId/manual-audit/checks
+app.post('/api/reports/:reportId/pages/:pageId/manual-audit/checks', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page) return res.status(404).json({ error: 'Page not found' });
+
+    if (!page.manualAudit) page.manualAudit = initManualAudit();
+
+    const { title, description, impact, status, notes } = req.body as Partial<ManualCheckResult>;
+    if (!title) return res.status(400).json({ error: 'title is required' });
+
+    const newCheck: ManualCheckResult = {
+      id: randomUUID(),
+      type: 'custom',
+      title,
+      description,
+      impact,
+      status: status ?? 'not-tested',
+      notes,
+      updatedAt: new Date().toISOString(),
+    };
+    page.manualAudit.checks.push(newCheck);
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.status(201).json({ manualAudit: page.manualAudit });
+  } catch (err) {
+    console.error('Add custom check error:', err);
+    return res.status(500).json({ error: 'Failed to add custom check' });
+  }
+});
+
+// DELETE /api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId
+app.delete('/api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page || !page.manualAudit) return res.status(404).json({ error: 'Page or audit not found' });
+
+    const check = page.manualAudit.checks.find(c => c.id === req.params.checkId);
+    if (!check) return res.status(404).json({ error: 'Check not found' });
+    if (check.type !== 'custom') return res.status(400).json({ error: 'Only custom checks can be deleted' });
+
+    page.manualAudit.checks = page.manualAudit.checks.filter(c => c.id !== req.params.checkId);
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error('Delete custom check error:', err);
+    return res.status(500).json({ error: 'Failed to delete check' });
+  }
+});
+
+// PATCH /api/reports/:reportId/pages/:pageId/manual-audit
+app.patch('/api/reports/:reportId/pages/:pageId/manual-audit', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page) return res.status(404).json({ error: 'Page not found' });
+
+    if (!page.manualAudit) page.manualAudit = initManualAudit();
+
+    const { auditorNotes } = req.body as { auditorNotes?: string };
+    page.manualAudit.auditorNotes = auditorNotes;
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.json({ manualAudit: page.manualAudit });
+  } catch (err) {
+    console.error('Auditor notes update error:', err);
+    return res.status(500).json({ error: 'Failed to update auditor notes' });
   }
 });
 

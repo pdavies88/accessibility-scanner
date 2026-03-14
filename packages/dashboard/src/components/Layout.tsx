@@ -6,14 +6,6 @@ import { useScanContext } from '@/context/ScanContext';
 
 type Props = { children: ReactNode };
 
-const FOCUSABLE = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(', ');
 
 export function Layout({ children }: Props) {
   const { reportId } = useCurrentReport();

@@ -1,4 +1,4 @@
-import { ScanReport, AxeViolation } from '@accessibility-scanner/shared';
+import { ScanReport, AxeViolation, ManualCheckResult } from '@accessibility-scanner/shared';
 import ExcelJS from 'exceljs';
 
 /**
@@ -23,8 +23,11 @@ export class Reporter {
    */
   exportToCsv(report: ScanReport, selectedViolations?: string[], tasklistName?: string): string {
     const rows = this.buildRows(report, selectedViolations, tasklistName);
+    const manualRows = this.buildManualAuditRows(report);
 
-    return rows
+    const allRows = manualRows.length > 0 ? [...rows, ...manualRows] : rows;
+
+    return allRows
       .map((row: string[]) =>
         row
           .map((cell: string) =>
@@ -51,6 +54,23 @@ export class Reporter {
     rows.forEach((row: string[]) => {
       sheet.addRow(row);
     });
+
+    const manualChecks = this.collectManualChecks(report);
+    if (manualChecks.length > 0) {
+      const manualSheet = workbook.addWorksheet('Manual Audit');
+      manualSheet.addRow(['Criterion', 'Level', 'Title', 'Status', 'Notes', 'Impact', 'Last Updated']);
+      manualChecks.forEach(c => {
+        manualSheet.addRow([
+          c.wcagCriterion ?? '',
+          c.level ?? '',
+          c.title,
+          c.status,
+          c.notes ?? '',
+          c.impact ?? '',
+          c.updatedAt,
+        ]);
+      });
+    }
 
     // exceljs returns a Uint8Array/Buffer-like object; normalize to Node Buffer
     const buf = await workbook.xlsx.writeBuffer();
@@ -153,6 +173,40 @@ export class Reporter {
       rows.push(row);
     });
 
+    return rows;
+  }
+
+  private collectManualChecks(report: ScanReport): ManualCheckResult[] {
+    const checks: ManualCheckResult[] = [];
+    for (const result of report.results) {
+      if (result.manualAudit) {
+        for (const check of result.manualAudit.checks) {
+          if (check.status !== 'not-tested') {
+            checks.push(check);
+          }
+        }
+      }
+    }
+    return checks;
+  }
+
+  private buildManualAuditRows(report: ScanReport): string[][] {
+    const checks = this.collectManualChecks(report);
+    if (checks.length === 0) return [];
+
+    const rows: string[][] = [];
+    rows.push(['--- MANUAL AUDIT ---']);
+    rows.push(['Criterion', 'Level', 'Title', 'Status', 'Notes', 'Impact']);
+    for (const c of checks) {
+      rows.push([
+        c.wcagCriterion ?? '',
+        c.level ?? '',
+        c.title,
+        c.status,
+        c.notes ?? '',
+        c.impact ?? '',
+      ]);
+    }
     return rows;
   }
 
