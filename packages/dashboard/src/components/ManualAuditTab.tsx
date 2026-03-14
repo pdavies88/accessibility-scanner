@@ -400,6 +400,7 @@ function CheckGroupSection({
             <CheckRow
               key={check.id}
               check={check}
+              showMeta
               onStatusChange={status => onStatusChange(check.id, status)}
               onNotesChange={notes => onNotesChange(check.id, notes)}
             />
