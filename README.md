@@ -12,6 +12,7 @@ A comprehensive TypeScript tool for automated accessibility testing using axe-co
 - 💾 Local storage in a simple JSON file (`data/reports.json`)
 - 📈 Detailed reports with violation tracking, impact, WCAG level, and criteria
 - 🛑 Abort a running scan at any time
+- 🏷️ Page titles displayed throughout the dashboard in place of raw URLs
 
 ## Getting Started
 
@@ -70,10 +71,12 @@ The dashboard supports three scan input modes:
 - Default max pages: **200** (~5–10 min at default concurrency).
 - Max pages cap: **500** — larger crawls can take 30+ min and use significantly more memory.
 - A scan in progress can be **aborted** at any time using the Abort button; no partial data is saved.
+- The crawler uses a full Puppeteer browser to render JavaScript before extracting links, ensuring pages loaded dynamically (infinite scroll, client-side routing, etc.) are discovered correctly.
 
 ### Managing Reports
 
-- Reports are listed on the dashboard home page.
+- Reports are listed on the dashboard home page, showing the **page title** of the scanned site as the heading with the URL as a subtitle.
+- The **Reports** nav dropdown also displays page titles for quick identification.
 - Each report can be **removed** individually via the Remove button on its card.
 - When a scan is running the **New Scan** button in the nav is disabled until it completes or is aborted.
 

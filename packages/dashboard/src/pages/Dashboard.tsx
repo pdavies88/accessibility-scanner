@@ -13,6 +13,16 @@ import {
   Progress,
 } from '@/components/ui';
 import { ExternalLink } from '@/components/ExternalLink';
+import { TriangleAlert } from 'lucide-react';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 type InputMode = 'url' | 'file' | 'crawl';
 
@@ -51,6 +61,8 @@ export function Dashboard() {
   const [scanningUrl, setScanningUrl] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  const removeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const esRef = useRef<EventSource | null>(null);
@@ -241,7 +253,6 @@ export function Dashboard() {
             <Input
               id="sitemap"
               type="text"
-              placeholder="https://example.com/sitemap.xml"
               value={sitemap}
               onChange={e => setSitemap(e.target.value)}
               disabled={scanning}
@@ -277,23 +288,6 @@ export function Dashboard() {
 
       {mode === 'crawl' && (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="crawl-url">Site URL to crawl</Label>
-            <div className="flex gap-2">
-              <Input
-                id="crawl-url"
-                type="url"
-                placeholder="https://example.com"
-                value={crawlUrl}
-                onChange={e => setCrawlUrl(e.target.value)}
-                disabled={scanning}
-                className="flex-1"
-              />
-              <Button type="submit" disabled={!canSubmit}>
-                {scanning ? 'Running…' : 'Crawl & Scan'}
-              </Button>
-            </div>
-          </div>
           <div className="rounded-md border border-border bg-muted/40 p-3 text-sm space-y-1">
             <p className="font-medium">⚠ Before you crawl</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
@@ -313,6 +307,22 @@ export function Dashboard() {
               onChange={e => setMaxPages(e.target.value)}
               disabled={scanning}
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="crawl-url">Site URL to crawl</Label>
+            <div className="flex gap-2">
+              <Input
+                id="crawl-url"
+                type="url"
+                value={crawlUrl}
+                onChange={e => setCrawlUrl(e.target.value)}
+                disabled={scanning}
+                className="flex-1"
+              />
+              <Button type="submit" disabled={!canSubmit}>
+                {scanning ? 'Running…' : 'Crawl & Scan'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -410,14 +420,13 @@ export function Dashboard() {
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
                 <CardTitle>
-                  {report.sitemap.startsWith('http') ? (
-                    <ExternalLink href={new URL(report.sitemap).origin}>
-                      {new URL(report.sitemap).hostname}
-                    </ExternalLink>
-                  ) : (
-                    <span>{report.sitemap}</span>
-                  )}
+                  {report.pageTitle || report.sitemap}
                 </CardTitle>
+                {report.pageTitle && report.sitemap.startsWith('http') && (
+                  <ExternalLink href={report.sitemap} className="text-sm text-muted-foreground break-all font-normal">
+                    {report.sitemap}
+                  </ExternalLink>
+                )}
                 <div className="flex items-center gap-3 mt-1">
                   <p className="text-sm text-muted-foreground">
                     Scanned on {new Date(report.startTime).toLocaleString()}
@@ -433,7 +442,10 @@ export function Dashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleRemove(report.id)}
+                onClick={e => {
+                  removeButtonRef.current = e.currentTarget;
+                  setPendingRemoveId(report.id);
+                }}
                 aria-label={`Remove scan for ${report.sitemap}`}
               >
                 Remove
@@ -484,11 +496,71 @@ export function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/*
+        Radix Dialog provides out-of-the-box:
+          • role="dialog" + aria-modal="true"
+          • aria-labelledby → DialogTitle
+          • aria-describedby → DialogDescription
+          • Keyboard trap (Tab / Shift+Tab cycle inside)
+          • Escape key closes and returns focus to trigger
+          • Focus return to the element that opened the dialog
+        We add on top:
+          • autoFocus on Cancel so the safe action is default
+          • DialogClose wrapping Cancel for Radix-managed close + focus return
+          • aria-live="assertive" status region for screen reader announcement
+      */}
+      <Dialog
+        open={!!pendingRemoveId}
+        onOpenChange={open => {
+          if (!open) {
+            setPendingRemoveId(null);
+            // Explicitly return focus to the button that opened the dialog
+            setTimeout(() => removeButtonRef.current?.focus(), 0);
+          }
+        }}
+      >
+        <DialogContent className="border-2 border-white" aria-live="assertive">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-foreground">Remove report?</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              This will permanently delete this scan report.
+            </DialogDescription>
+            <p className="flex items-center gap-1.5 text-sm text-destructive font-medium" aria-live="polite">
+              <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
+              This action cannot be undone.
+            </p>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="text-foreground border-border"
+                aria-label="Cancel — keep this report"
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+              >
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => pendingRemoveId && handleRemove(pendingRemoveId)}
+              aria-label="Permanently remove this scan report"
+            >
+              Remove report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
   async function handleRemove(id: string) {
     await fetch(`/api/reports/${id}`, { method: 'DELETE' });
+    setPendingRemoveId(null);
     refresh();
   }
 }

@@ -95,11 +95,12 @@ export class SitemapScanner {
     try {
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
       const axe = new AxePuppeteer(page);
-      const results = await axe.analyze();
-      
+      const [results, pageTitle] = await Promise.all([axe.analyze(), page.title()]);
+
       return {
         id: uuidv4(),
         url,
+        title: pageTitle || undefined,
         timestamp: new Date(),
         violations: results.violations.map((v: any) => ({
           id: v.id,
@@ -162,9 +163,17 @@ export class SitemapScanner {
       });
     });
 
+    // Use the title of the root page (the one matching the crawl/sitemap URL)
+    const rootUrl = this.options.label ?? this.options.sitemap;
+    const normalize = (u: string) => { try { return new URL(u).href.replace(/\/$/, ''); } catch { return u; } };
+    const rootNorm = normalize(rootUrl);
+    const rootResult = results.find(r => normalize(r.url) === rootNorm);
+    const pageTitle = rootResult?.title || results[0]?.title;
+
     return {
       id: uuidv4(),
-      sitemap: this.options.label ?? this.options.sitemap,
+      sitemap: rootUrl,
+      pageTitle,
       startTime,
       endTime,
       results,

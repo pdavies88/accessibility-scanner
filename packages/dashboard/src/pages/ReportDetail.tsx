@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { ExternalLink } from '@/components/ExternalLink';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useCurrentReport } from '@/context/CurrentReportContext';
 import { useReport } from '@/hooks/useReport';
@@ -42,9 +43,7 @@ export function ReportDetail() {
 
   useEffect(() => {
     if (report) {
-      const label = report.sitemap.startsWith('http')
-        ? new URL(report.sitemap).hostname
-        : report.sitemap;
+      const label = report.pageTitle || report.sitemap;
       document.title = `${label} — Accessibility Report`;
       setCurrentReport(report.id, label);
     }
@@ -78,10 +77,17 @@ export function ReportDetail() {
     <div className="container mx-auto p-6">
       <div className="mb-6 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold mb-2">
-            {report.sitemap.startsWith('http') ? new URL(report.sitemap).hostname : report.sitemap}
+          <h1 className="text-3xl font-bold mb-1">
+            {report.pageTitle || report.sitemap}
           </h1>
-          <p className="">
+          {report.pageTitle && report.sitemap.startsWith('http') && (
+            <p className="text-sm mb-1">
+              <ExternalLink href={report.sitemap} className="break-all text-muted-foreground text-sm">
+                {report.sitemap}
+              </ExternalLink>
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">
             Scanned on {new Date(report.startTime).toLocaleString()}
           </p>
         </div>

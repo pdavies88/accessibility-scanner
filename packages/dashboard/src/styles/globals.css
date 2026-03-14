@@ -51,8 +51,8 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 15%;
+    --border: 0 0% 40%;  /* ≥3:1 against black bg (WCAG 1.4.11) */
+    --input: 0 0% 45%;   /* ≥3:1 against black bg (WCAG 1.4.11) */
     --ring: 266 100% 56%;
     --link: 266 100% 78%;
     --chart-1: 280 65% 60%;
@@ -80,8 +80,8 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
+    --border: 0 0% 40%;  /* ≥3:1 against black bg (WCAG 1.4.11) */
+    --input: 0 0% 45%;   /* ≥3:1 against black bg (WCAG 1.4.11) */
     --ring: 266 80% 60%;
     --link: 266 100% 78%;
     --chart-1: 280 65% 60%;
@@ -93,7 +93,20 @@
 }
 
 @layer base {
+  /* WCAG 1.4.12 — minimum line-height of 1.5× font size */
+  body { line-height: 1.5; }
+
   a, button { cursor: pointer; }
+
+  /* WCAG 2.5.8 — minimum 24×24 px target size for all interactive controls */
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    min-height: 1.5rem; /* 24px */
+    min-width: 1.5rem;  /* 24px */
+  }
 }
 
 @keyframes progress-indeterminate {
