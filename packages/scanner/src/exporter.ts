@@ -91,7 +91,7 @@ export class Reporter {
     // map violation ID to grouped data including html snippets
     const violationGroups = new Map<
       string,
-      { violation: AxeViolation; pageNodes: string[]; count: number }
+      { violation: AxeViolation; pageNodes: Array<{ url: string; html: string }>; count: number }
     >();
 
     report.results.forEach(result => {
@@ -109,25 +109,35 @@ export class Reporter {
 
           // each node represents a specific HTML snippet on the page
           violation.nodes.forEach(node => {
-            group.pageNodes.push(`${result.url} - \`${node.html}\``);
+            group.pageNodes.push({ url: result.url, html: node.html });
             group.count++;
           });
         });
     });
 
     violationGroups.forEach(({ violation, pageNodes, count }) => {
-      const uniqueEntries = [...new Set(pageNodes)];
+      // deduplicate by url+html
+      const seen = new Set<string>();
+      const uniqueEntries = pageNodes.filter(p => {
+        const key = `${p.url}||${p.html}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
-      // if there are too many nodes, strip HTML and only keep urls
-      const pagesForDescription =
+      // if there are too many nodes, strip HTML and only keep unique urls
+      const pagesForDescription: Array<{ url: string; html: string }> =
         uniqueEntries.length > 100
-          ? [...new Set(uniqueEntries.map(p => p.split(' - ')[0]))]
+          ? [...new Set(uniqueEntries.map(p => p.url))].map(url => ({ url, html: '' }))
           : uniqueEntries;
+
+      const firstSnippet = uniqueEntries[0]?.html ?? '';
 
       const descriptionMarkdown = this.buildDescriptionMarkdown(
         violation,
         pagesForDescription,
-        count
+        count,
+        firstSnippet
       );
 
       const resolvedTasklist = tasklistName?.trim() || 'Accessibility Updates';
@@ -135,7 +145,7 @@ export class Reporter {
       const severityTag = this.severityTag(violation.impact);
       const level = violation.level ?? 'best-practice';
       const levelTag = level !== 'best-practice' ? level : 'Best Practice';
-      const tags = ['Accessibility', severityTag, levelTag].join(', ');
+      const tags = ['Accessibility', severityTag, levelTag, 'Automated'].join(', ');
 
       const firstCriterion = wcagTags[0]?.replace('WCAG ', '') ?? '';
       const taskName = firstCriterion
@@ -177,22 +187,15 @@ export class Reporter {
 
   private buildDescriptionMarkdown(
     violation: AxeViolation,
-    pages: string[],
-    totalInstances: number
+    pages: Array<{ url: string; html: string }>,
+    totalInstances: number,
+    firstSnippet: string = ''
   ): string {
     const moreNote = pages.length > 200
       ? '\n- **Please see dashboard for more URLs**'
       : '';
     const displayedPages = pages.length > 200 ? pages.slice(0, 200) : pages;
 
-    const firstSnippet = pages.length > 0 && pages[0].includes(' - `')
-      ? pages[0].split(' - `')[1]?.replace(/`$/, '') ?? ''
-      : '';
-
-    const wcagLabels = this.wcagCriteriaTags(violation.tags);
-    const wcagLine = wcagLabels.length > 0 ? wcagLabels.join(', ') : '—';
-    const level = violation.level ?? 'best-practice';
-    const levelDisplay = level !== 'best-practice' ? `Level ${level}` : 'Best Practice';
     const severity = this.severityTag(violation.impact);
 
     return `### 1. Describe the Issue
@@ -208,11 +211,7 @@ export class Reporter {
 > tag the task with level of severity: **${severity}**
 > provide more detail for the level of severity decision
 
-**c. WCAG Criteria**
-
-> ${wcagLine} — ${levelDisplay}
-
-**d. Code Snippet**
+**c. Code Snippet**
 
 > Add a code snippet for the section that is failing, if applicable.
 > *Only one example is needed, as long as it conveys the issue appropriately.*
@@ -221,14 +220,17 @@ export class Reporter {
 ${firstSnippet || 'code snippet'}
 \`\`\`
 
-**e. Screenshot of Affected Area**
+**d. Screenshot of Affected Area**
 
 > Take a screenshot of the portion of the page that best demonstrates the issue.
 > *Only one example is needed, as long as it conveys the issue appropriately.*
 
-**f. Affected Pages (${totalInstances})**
+**e. Affected Pages (${totalInstances})**
 
-${displayedPages.map(p => `> ${p.split(' - ')[0]}`).join('\n')}${moreNote}
+${displayedPages.map(p => {
+      if (!p.html) return `> ${p.url}`;
+      return `> ${p.url}\n> \`\`\`html\n> ${p.html}\n> \`\`\``;
+    }).join('\n\n')}${moreNote}
 
 ---
 

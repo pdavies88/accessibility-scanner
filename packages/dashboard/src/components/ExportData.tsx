@@ -19,8 +19,8 @@ export function ExportData({ report }: ExportDataProps) {
 
   const [selectedViolation, setSelectedViolation] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('excel');
-  const [tasklistName, setTasklistName] = useState('');
-  const [fileName, setFileName] = useState('');
+  const [tasklistName, setTasklistName] = useState('Accessibility Audit');
+  const [fileName, setFileName] = useState(`accessibility-issues-${report.id}`);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (types: string[]) => {
@@ -103,7 +103,6 @@ export function ExportData({ report }: ExportDataProps) {
             <Input
               id="tasklist-name"
               type="text"
-              placeholder="Accessibility Updates"
               value={tasklistName}
               onChange={e => setTasklistName(e.target.value)}
             />
@@ -114,7 +113,6 @@ export function ExportData({ report }: ExportDataProps) {
             <Input
               id="file-name"
               type="text"
-              placeholder={`accessibility-issues-${report.id}`}
               value={fileName}
               onChange={e => setFileName(e.target.value)}
             />
