@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useReport } from '@/hooks/useReport';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from '@/components/ExternalLink';
-import { X, ArrowLeft } from 'lucide-react';
+import { X, ArrowLeft, FileSearch } from 'lucide-react';
 
 export function ViolationWindow() {
   const { id, violationId } = useParams<{ id: string; violationId: string }>();
@@ -33,7 +33,12 @@ export function ViolationWindow() {
   if (!report) return <div className="p-6">Report not found.</div>;
   if (!violation) return <div className="p-6">Violation not found in this report.</div>;
 
-  const urls = [...new Set(allInstances.map(i => i.url))].sort((a, b) => a.localeCompare(b));
+  const affectedPages = [...new Set(allInstances.map(i => i.url))]
+    .sort((a, b) => a.localeCompare(b))
+    .map(url => ({
+      url,
+      pageId: report.results.find(r => r.url === url)?.id,
+    }));
 
   const impactColors = {
     critical: 'destructive',
@@ -101,12 +106,21 @@ export function ViolationWindow() {
 
       <div>
         <p className="text-xs text-muted-foreground mb-1">
-          Affected Pages ({urls.length})
+          Affected Pages ({affectedPages.length})
         </p>
-        <ul className="space-y-1">
-          {urls.map(u => (
-            <li key={u}>
-              <ExternalLink href={u} className="break-all text-sm">{u}</ExternalLink>
+        <ul className="space-y-1.5">
+          {affectedPages.map(({ url, pageId }) => (
+            <li key={url} className="flex items-center gap-3 flex-wrap">
+              <ExternalLink href={url} className="break-all text-sm flex-1 min-w-0">{url}</ExternalLink>
+              {pageId && (
+                <Link
+                  to={`/reports/${id}/page/${pageId}`}
+                  className="inline-flex items-center gap-1 shrink-0 text-xs text-link hover:underline focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
+                >
+                  <FileSearch className="h-3.5 w-3.5" aria-hidden="true" />
+                  Page details
+                </Link>
+              )}
             </li>
           ))}
         </ul>

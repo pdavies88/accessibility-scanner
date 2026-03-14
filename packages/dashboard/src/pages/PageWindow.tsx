@@ -1,18 +1,39 @@
-import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { useReport } from '@/hooks/useReport';
+import { useManualAudit } from '@/hooks/useManualAudit';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ManualAuditTab } from '@/components/ManualAuditTab';
 import { ExternalLink } from '@/components/ExternalLink';
-import { X, ArrowLeft } from 'lucide-react';
+import { X, ArrowLeft, ChevronDown } from 'lucide-react';
 
 export function PageWindow() {
   const { id, pageId } = useParams<{ id: string; pageId: string }>();
   const { report, loading, error } = useReport(id);
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialTab = (location.state as { tab?: string } | null)?.tab ?? 'automated';
 
   const page = report?.results.find(r => r.id === pageId) ?? null;
+
+  const { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes, toggleComplete, addFailure, updateFailure, deleteFailure } =
+    useManualAudit(id ?? '', pageId ?? '', page?.manualAudit);
+
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [impactFilter, setImpactFilter] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
+  const [expandedViolations, setExpandedViolations] = useState<Set<string>>(new Set());
+
+  function toggleViolation(id: string) {
+    setExpandedViolations(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (page) {
@@ -47,8 +68,20 @@ export function PageWindow() {
       });
   }
 
+  const manualFailCount = audit.checks.filter(c => c.status === 'fail').length;
+  const manualNotTestedCount = audit.checks.filter(c => c.status === 'not-tested').length;
+
+  const isAuditComplete = audit.completed === true;
+
+  const manualTabLabel =
+    isAuditComplete
+      ? `Manual Audit ✓`
+      : manualFailCount > 0
+        ? `Manual Audit (${manualFailCount} fail / ${manualNotTestedCount} not tested)`
+        : `Manual Audit (${audit.checks.length - manualNotTestedCount} checked)`;
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 text-base">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={() => navigate(`/reports/${id}?tab=pages`)}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Back to report
@@ -78,69 +111,189 @@ export function PageWindow() {
         </div>
       </div>
 
-      {page.violations.length > 0 ? (
-        <div className="border rounded overflow-x-auto">
-          <Table aria-label={`Violations found on ${page.url}`}>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Violation</TableHead>
-                <TableHead>Impact</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>WCAG Criteria</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Summary</TableHead>
-                <TableHead>HTML</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {page.violations.map((v, idx) => {
-                const nodes = v.nodes.length
-                  ? v.nodes
-                  : [{ html: '', target: [], failureSummary: '' }];
-                return nodes.map((n, nidx) => (
-                  <TableRow key={`${v.id}-${idx}-${nidx}`}>
-                    {nidx === 0 && (
-                      <>
-                        <TableCell rowSpan={nodes.length} className="min-w-[180px]">
-                          <ExternalLink href={v.helpUrl} className="font-medium">
-                            {[...wcagCriteria(v.tags), v.help].filter(Boolean).join(' — ')}
-                          </ExternalLink>
-                        </TableCell>
-                        <TableCell rowSpan={nodes.length}>
-                          <Badge variant={impactColors[v.impact]}>{v.impact}</Badge>
-                        </TableCell>
-                        <TableCell rowSpan={nodes.length}>
-                          {v.level
-                            ? <Badge variant="outline">{v.level}</Badge>
-                            : <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell rowSpan={nodes.length} className="min-w-[120px]">
-                          <div className="flex flex-wrap gap-1">
-                            {wcagCriteria(v.tags).length > 0
-                              ? wcagCriteria(v.tags).map(c => (
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full justify-start rounded-none pb-0 mb-4">
+          <TabsTrigger value="automated">
+            Automated Issues ({page.violations.length})
+          </TabsTrigger>
+          <TabsTrigger value="manual">
+            {manualTabLabel}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="automated">
+          {page.violations.length > 0 ? (() => {
+            const IMPACT_ORDER = ['critical', 'serious', 'moderate', 'minor'] as const;
+            const LEVEL_ORDER = ['A', 'AA', 'AAA', 'best-practice'] as const;
+
+            const impactCounts = page.violations.reduce((acc, v) => {
+              acc[v.impact] = (acc[v.impact] ?? 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+
+            const levelCounts = page.violations.reduce((acc, v) => {
+              const key = v.level ?? 'best-practice';
+              acc[key] = (acc[key] ?? 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+
+            const filteredViolations = page.violations.filter(v => {
+              if (impactFilter && v.impact !== impactFilter) return false;
+              if (levelFilter && (v.level ?? 'best-practice') !== levelFilter) return false;
+              return true;
+            });
+
+            const segBtn = (active: boolean) => cn(
+              'px-2.5 py-1 text-xs rounded font-medium transition-colors',
+              active
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground cursor-pointer',
+            );
+
+            return (
+              <div className="space-y-3">
+                {/* Filter controls */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-xs text-muted-foreground mr-2 shrink-0">Impact</span>
+                    <div className="inline-flex items-center rounded-md border bg-muted p-0.5 gap-0.5" role="group" aria-label="Filter by impact">
+                      <button type="button" onClick={() => setImpactFilter('')} aria-pressed={impactFilter === ''} className={segBtn(impactFilter === '')}>
+                        All ({page.violations.length})
+                      </button>
+                      {IMPACT_ORDER.filter(i => impactCounts[i]).map(i => (
+                        <button key={i} type="button" onClick={() => setImpactFilter(f => f === i ? '' : i)} aria-pressed={impactFilter === i} className={segBtn(impactFilter === i)}>
+                          {i.charAt(0).toUpperCase() + i.slice(1)} ({impactCounts[i]})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-xs text-muted-foreground mr-2 shrink-0">Level</span>
+                    <div className="inline-flex items-center rounded-md border bg-muted p-0.5 gap-0.5" role="group" aria-label="Filter by WCAG level">
+                      <button type="button" onClick={() => setLevelFilter('')} aria-pressed={levelFilter === ''} className={segBtn(levelFilter === '')}>
+                        All
+                      </button>
+                      {LEVEL_ORDER.filter(l => levelCounts[l]).map(l => (
+                        <button key={l} type="button" onClick={() => setLevelFilter(f => f === l ? '' : l)} aria-pressed={levelFilter === l} className={segBtn(levelFilter === l)}>
+                          {l === 'best-practice' ? 'Best Practice' : l} ({levelCounts[l]})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(impactFilter || levelFilter) && (
+                    <span className="text-xs text-muted-foreground">
+                      Showing {filteredViolations.length} of {page.violations.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Violation accordion */}
+                {filteredViolations.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredViolations.map(v => {
+                      const criteria = wcagCriteria(v.tags);
+                      const isOpen = expandedViolations.has(v.id);
+                      const nodeCount = v.nodes.length;
+                      return (
+                        <div key={v.id} className="border rounded">
+                          {/* Header row — always visible */}
+                          <button
+                            type="button"
+                            onClick={() => toggleViolation(v.id)}
+                            aria-expanded={isOpen}
+                            className="w-full flex items-start justify-between gap-4 px-4 py-3 text-left hover:bg-muted/40 transition-colors rounded group"
+                          >
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <p className="font-medium leading-snug">{v.help}</p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={e => { e.stopPropagation(); setImpactFilter(f => f === v.impact ? '' : v.impact); }}
+                                  aria-label={`Filter by impact: ${v.impact}`}
+                                  className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                                >
+                                  <Badge variant={impactColors[v.impact]} className="cursor-pointer hover:opacity-75 transition-opacity">{v.impact}</Badge>
+                                </button>
+                                {v.level && (
+                                  <button
+                                    type="button"
+                                    onClick={e => { e.stopPropagation(); setLevelFilter(f => f === v.level ? '' : (v.level ?? '')); }}
+                                    aria-label={`Filter by level: ${v.level}`}
+                                    className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                                  >
+                                    <Badge variant="outline" className="cursor-pointer hover:opacity-75 transition-opacity">{v.level}</Badge>
+                                  </button>
+                                )}
+                                {criteria.map(c => (
                                   <Badge key={c} variant="outline" className="font-mono text-xs">{c}</Badge>
-                                ))
-                              : <span className="text-muted-foreground">—</span>}
-                          </div>
-                        </TableCell>
-                      </>
-                    )}
-                    <TableCell className="min-w-[140px] text-xs">{n.target.join(' ')}</TableCell>
-                    <TableCell className="min-w-[200px]">
-                      <p className="text-xs break-words">{n.failureSummary}</p>
-                    </TableCell>
-                    <TableCell className="min-w-[200px]">
-                      <pre className="text-xs break-words whitespace-pre-wrap">{n.html}</pre>
-                    </TableCell>
-                  </TableRow>
-                ));
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <p className="text-muted-foreground">No violations found on this page.</p>
-      )}
+                                ))}
+                                <a
+                                  href={v.helpUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-link hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  Learn more
+                                </a>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0 pt-0.5">
+                              <span className="text-xs text-muted-foreground">{nodeCount} {nodeCount === 1 ? 'instance' : 'instances'}</span>
+                              <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
+                            </div>
+                          </button>
+
+                          {/* Expanded node list */}
+                          {isOpen && (
+                            <div className="border-t divide-y">
+                              {v.nodes.map((n, i) => (
+                                <div key={i} className="px-4 py-3 space-y-2">
+                                  <p className="text-xs font-medium text-muted-foreground">Instance {i + 1}</p>
+                                  {n.failureSummary && (
+                                    <p className="text-sm">{n.failureSummary}</p>
+                                  )}
+                                  {n.target.length > 0 && (
+                                    <p className="font-mono text-xs text-muted-foreground break-all">{n.target.join(' > ')}</p>
+                                  )}
+                                  {n.html && (
+                                    <pre className="text-xs bg-muted/40 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">{n.html}</pre>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No violations match the current filters.</p>
+                )}
+              </div>
+            );
+          })() : (
+            <p className="text-muted-foreground">No violations found on this page.</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <ManualAuditTab
+            audit={audit}
+            onStatusChange={updateCheck}
+            onNotesChange={updateNotes}
+            onAddCustomCheck={addCustomCheck}
+            onDeleteCustomCheck={deleteCustomCheck}
+            onAuditorNotesChange={updateAuditorNotes}
+            onToggleComplete={toggleComplete}
+            onAddFailure={addFailure}
+            onUpdateFailure={updateFailure}
+            onDeleteFailure={deleteFailure}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

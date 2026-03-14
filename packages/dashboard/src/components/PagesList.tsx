@@ -54,14 +54,38 @@ function buildTree(results: ScanResult[], search: string, filter: string): TreeN
     }
 
     let currentMap = dataMap;
-    for (let i = 0; i < segments.length; i++) {
+    let i = 0;
+    while (i < segments.length) {
       const seg = segments[i];
+
+      // Detect YYYY/MM/DD date prefix — flatten month+day+slug under the year node
+      if (
+        /^\d{4}$/.test(seg) &&
+        i + 2 < segments.length &&
+        /^\d{1,2}$/.test(segments[i + 1]) &&
+        /^\d{1,2}$/.test(segments[i + 2])
+      ) {
+        if (!currentMap.has(seg)) {
+          currentMap.set(seg, { result: null, children: new Map() });
+        }
+        const yearNode = currentMap.get(seg)!;
+        // Everything after the year collapses into one leaf key, e.g. "10/02/slug"
+        const leafKey = segments.slice(i + 1).join('/');
+        if (!yearNode.children.has(leafKey)) {
+          yearNode.children.set(leafKey, { result: null, children: new Map() });
+        }
+        yearNode.children.get(leafKey)!.result = result;
+        break;
+      }
+
+      // Normal single-segment processing
       if (!currentMap.has(seg)) {
         currentMap.set(seg, { result: null, children: new Map() });
       }
       const node = currentMap.get(seg)!;
       if (i === segments.length - 1) node.result = result;
       currentMap = node.children;
+      i++;
     }
   }
 
@@ -70,6 +94,8 @@ function buildTree(results: ScanResult[], search: string, filter: string): TreeN
     if (search && !result.url.toLowerCase().includes(search.toLowerCase())) return false;
     if (filter === 'with-violations' && result.violations.length === 0) return false;
     if (filter === 'clean' && result.violations.length > 0) return false;
+    if (filter === 'audited' && !result.manualAudit?.completed) return false;
+    if (filter === 'not-audited' && result.manualAudit?.completed) return false;
     return true;
   }
 
@@ -138,7 +164,7 @@ function TreeRow({
                 onClick={() => setExpanded(e => !e)}
                 aria-expanded={expanded}
                 aria-label={expanded ? `Collapse children of ${node.segment}` : `Expand children of ${node.segment}`}
-                className="shrink-0 rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="shrink-0 rounded p-0.5 hover:bg-muted"
               >
                 <ChevronRight
                   className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-150"
@@ -175,9 +201,16 @@ function TreeRow({
         </TableCell>
         <TableCell>
           {!isPathOnly && (
-            node.result!.violations.length === 0
-              ? <Badge variant="secondary">Clean</Badge>
-              : <Badge variant="destructive">Issues Found</Badge>
+            <div className="flex flex-wrap gap-1">
+              {node.result!.violations.length === 0
+                ? <Badge variant="secondary">Clean</Badge>
+                : <Badge variant="destructive">Issues Found</Badge>}
+              {node.result!.manualAudit?.completed && (
+                <Badge variant="outline" className="border-green-600/50 text-green-700 dark:text-green-400">
+                  Audited
+                </Badge>
+              )}
+            </div>
           )}
         </TableCell>
         <TableCell>
@@ -255,7 +288,7 @@ function TreeRows({
             <button
               type="button"
               onClick={() => setShowCount(c => c + PAGE_SIZE)}
-              className="text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              className="text-sm text-primary underline-offset-4 hover:underline rounded"
             >
               Show {Math.min(remaining, PAGE_SIZE)} more
               <span className="text-muted-foreground ml-1">({remaining} remaining)</span>
@@ -269,7 +302,7 @@ function TreeRows({
 
 export function PagesList({ results, reportId }: PagesListProps) {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'with-violations' | 'clean'>('all');
+  const [filter, setFilter] = useState<'all' | 'with-violations' | 'clean' | 'audited' | 'not-audited'>('all');
   const searchId = useId();
   const filterId = useId();
 
@@ -306,6 +339,8 @@ export function PagesList({ results, reportId }: PagesListProps) {
               <SelectItem value="all">All Pages</SelectItem>
               <SelectItem value="with-violations">With Violations</SelectItem>
               <SelectItem value="clean">Clean Pages</SelectItem>
+              <SelectItem value="audited">Audited</SelectItem>
+              <SelectItem value="not-audited">Not Yet Audited</SelectItem>
             </SelectContent>
           </Select>
         </div>

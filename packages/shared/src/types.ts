@@ -1,3 +1,40 @@
+export type ManualAuditStatus = 'pass' | 'fail' | 'na' | 'not-tested';
+
+export type FailureScope = 'global' | 'common' | 'page-specific';
+
+export interface ManualFailureInstance {
+  id: string;
+  scope?: FailureScope;
+  notes?: string;
+  codeSnippet?: string;
+  screenshotDataUrl?: string;
+  createdAt: string;
+}
+
+export interface ManualCheckResult {
+  id: string;                // wcagCriterion for predefined (e.g. "1.1.1"), UUID for custom
+  type: 'wcag' | 'custom';
+  wcagCriterion?: string;    // e.g. "1.1.1"
+  level?: 'A' | 'AA' | 'AAA';
+  title: string;
+  description?: string;
+  status: ManualAuditStatus;
+  notes?: string;
+  codeSnippet?: string;      // relevant HTML/code fragment
+  screenshotDataUrl?: string; // base64 data URL of screenshot
+  impact?: 'minor' | 'moderate' | 'serious' | 'critical';
+  failures?: ManualFailureInstance[];
+  updatedAt: string;         // ISO date
+}
+
+export interface ManualAudit {
+  lastUpdated: string;
+  auditorNotes?: string;
+  checks: ManualCheckResult[];
+  completed?: boolean;
+  completedAt?: string;
+}
+
 export interface ScanResult {
   id: string;
   url: string;
@@ -7,6 +44,7 @@ export interface ScanResult {
   passes: number;
   incomplete: number;
   inapplicable: number;
+  manualAudit?: ManualAudit;
 }
 
 export interface AxeViolation {

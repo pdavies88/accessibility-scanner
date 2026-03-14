@@ -1,0 +1,467 @@
+import { ManualCheckResult } from './types';
+
+export type CheckCategory =
+  | 'Keyboard & Focus'
+  | 'Forms & Input'
+  | 'Images & Media'
+  | 'Color & Visual'
+  | 'Links & Navigation'
+  | 'Content & Structure'
+  | 'Video & Audio';
+
+export type CheckPriority = 'high' | 'medium' | 'low';
+
+export interface PredefinedCheck {
+  id: string;
+  criterion: string;
+  level: 'A' | 'AA' | 'AAA';
+  title: string;
+  description: string;
+  category: CheckCategory;
+  priority: CheckPriority;
+  /** Actionable testing questions the auditor works through while evaluating this criterion. */
+  questions: string[];
+}
+
+export const PREDEFINED_CHECKS: PredefinedCheck[] = [
+  // ── Level A ──────────────────────────────────────────────────────────────
+  {
+    id: '1.1.1', criterion: '1.1.1', level: 'A',
+    title: 'Non-text Content',
+    description: 'All non-text content has a text alternative that serves the equivalent purpose.',
+    category: 'Images & Media',
+    priority: 'high',
+    questions: [
+      'Do all meaningful images have alt text that accurately describes their content or function?',
+      'Are purely decorative images hidden from assistive technology (empty alt="" or CSS background)?',
+      'Do icon-only buttons and controls have an accessible name (aria-label, title, or visually hidden text)?',
+    ],
+  },
+  {
+    id: '1.2.1', criterion: '1.2.1', level: 'A',
+    title: 'Audio-only and Video-only (Prerecorded)',
+    description: 'Prerecorded audio-only and video-only content has an equivalent alternative.',
+    category: 'Video & Audio',
+    priority: 'low',
+    questions: [
+      'Is there a text transcript for any audio-only content (e.g. podcasts, audio clips)?',
+      'Is there a text or audio equivalent for any video-only content (e.g. a silent instructional video)?',
+    ],
+  },
+  {
+    id: '1.2.2', criterion: '1.2.2', level: 'A',
+    title: 'Captions (Prerecorded)',
+    description: 'Captions are provided for all prerecorded audio content in synchronized media.',
+    category: 'Video & Audio',
+    priority: 'medium',
+    questions: [
+      'Do all videos that contain speech or meaningful audio have closed captions?',
+      'Are captions accurately synchronized with the audio and free of significant errors?',
+      'Do captions identify speakers and describe relevant non-speech sounds (e.g. [applause], [music])?',
+    ],
+  },
+  {
+    id: '1.3.3', criterion: '1.3.3', level: 'A',
+    title: 'Sensory Characteristics',
+    description: 'Instructions do not rely solely on sensory characteristics such as shape, color, size, visual location, or sound.',
+    category: 'Content & Structure',
+    priority: 'medium',
+    questions: [
+      'Do any instructions reference shape, position, or color alone — e.g. "click the green button" or "see the panel on the right"?',
+      'Can a blind or color-blind user follow every instruction on the page without relying on visual cues?',
+    ],
+  },
+  {
+    id: '1.4.1', criterion: '1.4.1', level: 'A',
+    title: 'Use of Color',
+    description: 'Color is not used as the only visual means of conveying information, indicating an action, or distinguishing an element.',
+    category: 'Color & Visual',
+    priority: 'high',
+    questions: [
+      'Are required form fields indicated by something other than color alone (e.g. an asterisk or the word "required")?',
+      'Do charts, graphs, or data visualizations use labels, patterns, or icons in addition to color?',
+      'If links are styled to match surrounding body text, are they distinguished by underline or another non-color cue?',
+    ],
+  },
+  {
+    id: '2.1.1', criterion: '2.1.1', level: 'A',
+    title: 'Keyboard',
+    description: 'All functionality is operable through a keyboard interface without requiring specific timings for individual keystrokes.',
+    category: 'Keyboard & Focus',
+    priority: 'high',
+    questions: [
+      'Can you reach every interactive element (links, buttons, inputs, menus, modals) using only the Tab and arrow keys?',
+      'Can every action that a mouse user can perform also be performed with the keyboard alone?',
+      'Do custom widgets (date pickers, sliders, carousels) respond correctly to expected keyboard interactions?',
+    ],
+  },
+  {
+    id: '2.1.2', criterion: '2.1.2', level: 'A',
+    title: 'No Keyboard Trap',
+    description: 'If keyboard focus can be moved to a component, focus can be moved away using only the keyboard.',
+    category: 'Keyboard & Focus',
+    priority: 'high',
+    questions: [
+      'Can you Tab away from every focusable component without getting permanently stuck?',
+      'When a modal or dialog opens, can you close it and return focus to the triggering element using only the keyboard?',
+      'Does focus ever become invisible or lost inside a widget so you cannot continue navigating?',
+    ],
+  },
+  {
+    id: '2.4.3', criterion: '2.4.3', level: 'A',
+    title: 'Focus Order',
+    description: 'If a web page can be navigated sequentially, focusable components receive focus in an order that preserves meaning and operability.',
+    category: 'Keyboard & Focus',
+    priority: 'high',
+    questions: [
+      'When tabbing through the page, does focus move in a logical reading order (top to bottom, left to right)?',
+      'After opening a dialog, dropdown, or dynamic content, does focus move into the new content?',
+      'When content closes or is removed, does focus return to a logical location rather than jumping to the top of the page?',
+    ],
+  },
+  {
+    id: '2.4.4', criterion: '2.4.4', level: 'A',
+    title: 'Link Purpose (In Context)',
+    description: 'The purpose of each link can be determined from the link text alone or from the link and its context.',
+    category: 'Links & Navigation',
+    priority: 'high',
+    questions: [
+      'Read every link\'s text in isolation — does it clearly describe where it goes or what it does?',
+      'Are there any "click here", "read more", "learn more", or "download" links that don\'t differentiate between targets?',
+      'For links that share the same text but go to different places, is each one distinguishable?',
+    ],
+  },
+  {
+    id: '3.2.1', criterion: '3.2.1', level: 'A',
+    title: 'On Focus',
+    description: 'If any component receives focus, it does not automatically change the context.',
+    category: 'Keyboard & Focus',
+    priority: 'medium',
+    questions: [
+      'When you Tab to any element, does it cause a page navigation, form submission, or unexpected popup?',
+      'Do tooltip or flyout menus that appear on focus stay in place long enough to be read without causing a context change?',
+    ],
+  },
+  {
+    id: '3.2.2', criterion: '3.2.2', level: 'A',
+    title: 'On Input',
+    description: 'Changing a setting of a user interface component does not automatically cause a change of context.',
+    category: 'Forms & Input',
+    priority: 'medium',
+    questions: [
+      'Does selecting an option in a dropdown or radio group automatically navigate to a new page without a submit button?',
+      'Does toggling a checkbox or switch cause an unexpected page reload or modal to appear without user initiation?',
+    ],
+  },
+  {
+    id: '3.3.1', criterion: '3.3.1', level: 'A',
+    title: 'Error Identification',
+    description: 'If an input error is detected, the item in error is identified and the error is described to the user in text.',
+    category: 'Forms & Input',
+    priority: 'high',
+    questions: [
+      'When you submit a form with intentional errors, is each specific field in error clearly identified in text?',
+      'Is the error message descriptive enough to tell the user what went wrong, not just that something went wrong?',
+      'Are errors communicated by text alone, not only by color, icon, or border change?',
+    ],
+  },
+  {
+    id: '3.3.2', criterion: '3.3.2', level: 'A',
+    title: 'Labels or Instructions',
+    description: 'Labels or instructions are provided when content requires user input.',
+    category: 'Forms & Input',
+    priority: 'high',
+    questions: [
+      'Does every form input have a visible, descriptive label that is still present when the field is focused?',
+      'Are placeholder texts used as substitutes for labels (they should not be — placeholders disappear on input)?',
+      'Are there format hints for fields that require a specific format, such as dates (MM/DD/YYYY) or phone numbers?',
+    ],
+  },
+  // ── Level AA ─────────────────────────────────────────────────────────────
+  {
+    id: '1.2.4', criterion: '1.2.4', level: 'AA',
+    title: 'Captions (Live)',
+    description: 'Captions are provided for all live audio content in synchronized media.',
+    category: 'Video & Audio',
+    priority: 'low',
+    questions: [
+      'Does any live video or webinar stream on this page provide real-time captions?',
+      'Are the live captions accurate enough to convey the meaning of the audio without major gaps?',
+    ],
+  },
+  {
+    id: '1.2.5', criterion: '1.2.5', level: 'AA',
+    title: 'Audio Description (Prerecorded)',
+    description: 'Audio description is provided for all prerecorded video content in synchronized media.',
+    category: 'Video & Audio',
+    priority: 'low',
+    questions: [
+      'Does any video convey meaningful information visually that is not described in the existing audio track?',
+      'If so, is an audio description track or described version of the video available?',
+    ],
+  },
+  {
+    id: '1.4.4', criterion: '1.4.4', level: 'AA',
+    title: 'Resize Text',
+    description: 'Text can be resized without assistive technology up to 200% without loss of content or functionality.',
+    category: 'Color & Visual',
+    priority: 'medium',
+    questions: [
+      'At 200% browser zoom, is all text readable and does no content become truncated, overlapping, or hidden?',
+      'Does the page layout adapt gracefully, or does it require horizontal scrolling at 200% zoom?',
+      'Are any text sizes set in px that prevent scaling when the user changes browser font size?',
+    ],
+  },
+  {
+    id: '1.4.10', criterion: '1.4.10', level: 'AA',
+    title: 'Reflow',
+    description: 'Content can be presented without loss of information at 320px width without requiring two-dimensional scrolling.',
+    category: 'Color & Visual',
+    priority: 'high',
+    questions: [
+      'At 320px viewport width (or 400% browser zoom), can you access all content by scrolling in one direction only?',
+      'Does any content get cut off, hidden, or require horizontal scrolling at small viewport widths?',
+      'Do tables, code blocks, or fixed-width elements break the single-axis scroll requirement?',
+    ],
+  },
+  {
+    id: '1.4.11', criterion: '1.4.11', level: 'AA',
+    title: 'Non-text Contrast',
+    description: 'The visual presentation of UI components and graphical objects has at least a 3:1 contrast ratio against adjacent color(s).',
+    category: 'Color & Visual',
+    priority: 'high',
+    questions: [
+      'Do buttons, input borders, checkboxes, radio buttons, and toggle switches meet a 3:1 contrast ratio against their background?',
+      'Do focus indicators (outlines, rings) have at least 3:1 contrast against the adjacent background?',
+      'Do meaningful icons and graphical elements (e.g. chart lines, error icons) meet the 3:1 ratio?',
+    ],
+  },
+  {
+    id: '1.4.12', criterion: '1.4.12', level: 'AA',
+    title: 'Text Spacing',
+    description: 'No loss of content or functionality occurs when text spacing is changed (line height, letter spacing, word spacing, paragraph spacing).',
+    category: 'Color & Visual',
+    priority: 'medium',
+    questions: [
+      'Apply the WCAG text spacing bookmarklet (line-height: 1.5, letter-spacing: 0.12em, word-spacing: 0.16em, paragraph spacing: 2em) — does any text overlap, get clipped, or disappear?',
+      'Do any interactive components (dropdowns, tooltips) break or become unusable with the overridden spacing?',
+    ],
+  },
+  {
+    id: '2.4.7', criterion: '2.4.7', level: 'AA',
+    title: 'Focus Visible',
+    description: 'Any keyboard operable user interface has a mode of operation where the keyboard focus indicator is visible.',
+    category: 'Keyboard & Focus',
+    priority: 'high',
+    questions: [
+      'Tab through every interactive element — is there always a clearly visible focus indicator (outline, ring, or highlight)?',
+      'Has outline: none or outline: 0 been applied to any element without a replacement focus style?',
+      'Is the focus indicator visible against both light and dark backgrounds it may appear on?',
+    ],
+  },
+  {
+    id: '3.2.3', criterion: '3.2.3', level: 'AA',
+    title: 'Consistent Navigation',
+    description: 'Navigational mechanisms that are repeated on multiple pages occur in the same relative order each time they are repeated.',
+    category: 'Links & Navigation',
+    priority: 'medium',
+    questions: [
+      'Does the main navigation appear in the same location and order on every page of the site?',
+      'Do repeated elements like header, footer, and sidebar maintain their relative order across different page templates?',
+    ],
+  },
+  {
+    id: '3.2.4', criterion: '3.2.4', level: 'AA',
+    title: 'Consistent Identification',
+    description: 'Components that have the same functionality across pages are identified consistently.',
+    category: 'Links & Navigation',
+    priority: 'medium',
+    questions: [
+      'Are components with identical functions labeled the same way across all pages (e.g. search, close, submit)?',
+      'Do icons that perform the same action always have the same accessible name, regardless of where they appear?',
+    ],
+  },
+  {
+    id: '3.3.3', criterion: '3.3.3', level: 'AA',
+    title: 'Error Suggestion',
+    description: 'If an input error is detected and suggestions for correction are known, the suggestion is provided to the user in text.',
+    category: 'Forms & Input',
+    priority: 'medium',
+    questions: [
+      'When a field expects a specific format (e.g. email, date, phone), does the error message tell the user how to correct it?',
+      'For selection-based fields with a known set of valid values, does the error message suggest the correct options?',
+    ],
+  },
+  {
+    id: '3.3.4', criterion: '3.3.4', level: 'AA',
+    title: 'Error Prevention (Legal, Financial, Data)',
+    description: 'For pages that cause legal commitments or financial transactions, submissions can be reversed, checked, or confirmed.',
+    category: 'Forms & Input',
+    priority: 'medium',
+    questions: [
+      'For checkout, account creation, or legal agreement forms, is there a review step before final submission?',
+      'Can the user go back and edit their submission, or is there a confirmation dialog before irreversible actions are taken?',
+    ],
+  },
+  // ── Level AAA ─────────────────────────────────────────────────────────────
+  {
+    id: '1.2.6', criterion: '1.2.6', level: 'AAA',
+    title: 'Sign Language (Prerecorded)',
+    description: 'Sign language interpretation is provided for all prerecorded audio content in synchronized media.',
+    category: 'Video & Audio',
+    priority: 'low',
+    questions: [
+      'Is a sign language interpretation video available for all prerecorded videos that contain speech?',
+      'Is the sign language interpreter clearly visible and sized appropriately in the video frame?',
+    ],
+  },
+  {
+    id: '1.4.6', criterion: '1.4.6', level: 'AAA',
+    title: 'Contrast (Enhanced)',
+    description: 'Text and images of text have a contrast ratio of at least 7:1; large text requires at least 4.5:1.',
+    category: 'Color & Visual',
+    priority: 'medium',
+    questions: [
+      'Does all body and UI text achieve at least a 7:1 contrast ratio against its background?',
+      'Does all large text (18pt+ regular or 14pt+ bold) achieve at least 4.5:1?',
+      'Are there any low-contrast placeholder texts, captions, or helper text that fall below the 7:1 threshold?',
+    ],
+  },
+  {
+    id: '2.1.3', criterion: '2.1.3', level: 'AAA',
+    title: 'Keyboard (No Exception)',
+    description: 'All functionality is operable through a keyboard interface with no exceptions for timing.',
+    category: 'Keyboard & Focus',
+    priority: 'low',
+    questions: [
+      'Is every single function on the page operable by keyboard, with absolutely no exceptions for path-dependent or freehand input?',
+      'Are there any drawing tools, drag-and-drop interfaces, or time-sensitive interactions that cannot be replicated by keyboard?',
+    ],
+  },
+  {
+    id: '2.4.8', criterion: '2.4.8', level: 'AAA',
+    title: 'Location',
+    description: 'Information about the user\'s location within a set of web pages is available (e.g. breadcrumbs, site map).',
+    category: 'Links & Navigation',
+    priority: 'low',
+    questions: [
+      'Is there a breadcrumb trail, site map, or other mechanism that shows the user where they are within the site structure?',
+      'Does the page title or heading clearly indicate the current page\'s position in the site hierarchy?',
+    ],
+  },
+  {
+    id: '2.4.9', criterion: '2.4.9', level: 'AAA',
+    title: 'Link Purpose (Link Only)',
+    description: 'The purpose of each link can be identified from the link text alone, without any surrounding context.',
+    category: 'Links & Navigation',
+    priority: 'medium',
+    questions: [
+      'Does every link\'s text unambiguously describe its destination when read completely out of context?',
+      'Are there any links whose purpose only makes sense because of the surrounding paragraph or heading?',
+    ],
+  },
+  {
+    id: '2.4.10', criterion: '2.4.10', level: 'AAA',
+    title: 'Section Headings',
+    description: 'Section headings are used to organize content throughout the page.',
+    category: 'Content & Structure',
+    priority: 'medium',
+    questions: [
+      'Does every major section of content have a descriptive heading that allows users to understand its purpose?',
+      'Is the heading hierarchy logical (h1 → h2 → h3) without skipping levels?',
+      'Can a screen reader user navigate the page\'s structure meaningfully using headings alone?',
+    ],
+  },
+  {
+    id: '3.1.3', criterion: '3.1.3', level: 'AAA',
+    title: 'Unusual Words',
+    description: 'A mechanism is available for identifying definitions of unusual or restricted words, idioms, and jargon.',
+    category: 'Content & Structure',
+    priority: 'low',
+    questions: [
+      'Is there a glossary, inline definition, or tooltip for any technical jargon, acronyms, or industry-specific terms?',
+      'Are idioms or figurative language explained for users who may interpret them literally?',
+    ],
+  },
+  {
+    id: '3.1.5', criterion: '3.1.5', level: 'AAA',
+    title: 'Reading Level',
+    description: 'Supplemental content is available when text requires reading ability more advanced than lower secondary education.',
+    category: 'Content & Structure',
+    priority: 'low',
+    questions: [
+      'Does the page\'s primary content require advanced reading ability (above a ~12-year-old level)?',
+      'If so, is there a simpler summary, plain language version, or supplemental explanation available?',
+    ],
+  },
+  {
+    id: '3.2.5', criterion: '3.2.5', level: 'AAA',
+    title: 'Change on Request',
+    description: 'Changes of context are initiated only by user request, or a mechanism is available to turn off such changes.',
+    category: 'Keyboard & Focus',
+    priority: 'low',
+    questions: [
+      'Does the page automatically redirect, refresh, or open new windows without the user explicitly requesting it?',
+      'Do carousels, slideshows, or auto-updating content change context without user control?',
+      'If automatic changes exist, is there a mechanism to turn them off before they occur?',
+    ],
+  },
+  {
+    id: '3.3.5', criterion: '3.3.5', level: 'AAA',
+    title: 'Help',
+    description: 'Context-sensitive help is available for pages that require user input.',
+    category: 'Forms & Input',
+    priority: 'medium',
+    questions: [
+      'For complex or non-obvious form fields, is context-sensitive help (tooltip, info icon, or inline guidance) available?',
+      'Is the help accessible by keyboard and screen reader, not just on mouse hover?',
+    ],
+  },
+  {
+    id: '3.3.6', criterion: '3.3.6', level: 'AAA',
+    title: 'Error Prevention (All)',
+    description: 'For all pages requiring user submission, submissions can be reversed, verified, or confirmed.',
+    category: 'Forms & Input',
+    priority: 'medium',
+    questions: [
+      'On every page with a form submission, can the user review and correct their input before it is finalized?',
+      'Is there a confirmation step, undo mechanism, or review screen before any irreversible action is completed?',
+    ],
+  },
+];
+
+/** Display order for the By Category view */
+export const CATEGORY_ORDER: CheckCategory[] = [
+  'Keyboard & Focus',
+  'Images & Media',
+  'Color & Visual',
+  'Forms & Input',
+  'Links & Navigation',
+  'Content & Structure',
+  'Video & Audio',
+];
+
+/** One-line testing hint shown under each category heading */
+export const CATEGORY_DESCRIPTIONS: Record<CheckCategory, string> = {
+  'Keyboard & Focus':    'Tab through the page without a mouse — verify all controls are reachable and focus is always visible.',
+  'Images & Media':      'Inspect all images, icons, and graphics for meaningful, accurate text alternatives.',
+  'Color & Visual':      'Test with zoomed text, high contrast, and custom text spacing; check UI component contrast ratios.',
+  'Forms & Input':       'Submit forms with intentional errors; verify every input has a visible label and helpful error messages.',
+  'Links & Navigation':  'Read link text in isolation — does each one describe its destination without surrounding context?',
+  'Content & Structure': 'Look for instructions that rely on position, shape, color, or sound to convey meaning.',
+  'Video & Audio':       'Check for captions, transcripts, or audio descriptions on any media present on this page.',
+};
+
+export function createDefaultChecks(): ManualCheckResult[] {
+  const now = new Date().toISOString();
+  return PREDEFINED_CHECKS.map(c => ({
+    id: c.id,
+    type: 'wcag' as const,
+    wcagCriterion: c.criterion,
+    level: c.level,
+    title: c.title,
+    description: c.description,
+    status: 'not-tested' as const,
+    updatedAt: now,
+  }));
+}
