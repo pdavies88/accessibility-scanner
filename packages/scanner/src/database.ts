@@ -1,6 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { ScanReport } from '@accessibility-scanner/shared';
+
+// Resolve data directory relative to this source file so the path is stable
+// regardless of where the process is started from (repo root vs package dir).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_DATA_PATH = path.join(__dirname, '..', 'data', 'reports.json');
 
 // This service used to wrap lowdb, but we no longer need a real
 // database.  Reports are stored in a single JSON file on disk; the
@@ -16,8 +22,7 @@ export class DatabaseService {
   private file: string;
 
   constructor(filePath?: string) {
-    this.file =
-      filePath || path.join(process.cwd(), 'data', 'reports.json');
+    this.file = filePath || DEFAULT_DATA_PATH;
   }
 
   private async ensureFile(): Promise<void> {

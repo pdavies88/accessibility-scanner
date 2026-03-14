@@ -1,5 +1,16 @@
 export type ManualAuditStatus = 'pass' | 'fail' | 'na' | 'not-tested';
 
+export type FailureScope = 'global' | 'common' | 'page-specific';
+
+export interface ManualFailureInstance {
+  id: string;
+  scope?: FailureScope;
+  notes?: string;
+  codeSnippet?: string;
+  screenshotDataUrl?: string;
+  createdAt: string;
+}
+
 export interface ManualCheckResult {
   id: string;                // wcagCriterion for predefined (e.g. "1.1.1"), UUID for custom
   type: 'wcag' | 'custom';
@@ -12,6 +23,7 @@ export interface ManualCheckResult {
   codeSnippet?: string;      // relevant HTML/code fragment
   screenshotDataUrl?: string; // base64 data URL of screenshot
   impact?: 'minor' | 'moderate' | 'serious' | 'critical';
+  failures?: ManualFailureInstance[];
   updatedAt: string;         // ISO date
 }
 
@@ -19,6 +31,8 @@ export interface ManualAudit {
   lastUpdated: string;
   auditorNotes?: string;
   checks: ManualCheckResult[];
+  completed?: boolean;
+  completedAt?: string;
 }
 
 export interface ScanResult {

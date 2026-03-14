@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   ManualAudit,
   ManualAuditStatus,
+  ManualFailureInstance,
   createDefaultChecks,
 } from '@accessibility-scanner/shared';
 
@@ -155,5 +156,87 @@ export function useManualAudit(
     [reportId, pageId],
   );
 
-  return { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes };
+  const addFailure = useCallback(
+    async (checkId: string) => {
+      try {
+        const res = await fetch(
+          `/api/reports/${reportId}/pages/${pageId}/manual-audit/checks/${checkId}/failures`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) },
+        );
+        const json = await res.json();
+        if (json.manualAudit) setAudit(json.manualAudit);
+      } catch (err) {
+        console.error('Failed to add failure:', err);
+      }
+    },
+    [reportId, pageId],
+  );
+
+  const updateFailure = useCallback(
+    async (checkId: string, failureId: string, data: Partial<Pick<ManualFailureInstance, 'scope' | 'notes' | 'codeSnippet' | 'screenshotDataUrl'>>) => {
+      setAudit(prev => ({
+        ...prev,
+        checks: prev.checks.map(c =>
+          c.id === checkId
+            ? { ...c, failures: (c.failures ?? []).map(f => f.id === failureId ? { ...f, ...data } : f) }
+            : c,
+        ),
+      }));
+      try {
+        await fetch(
+          `/api/reports/${reportId}/pages/${pageId}/manual-audit/checks/${checkId}/failures/${failureId}`,
+          { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) },
+        );
+      } catch (err) {
+        console.error('Failed to update failure:', err);
+      }
+    },
+    [reportId, pageId],
+  );
+
+  const deleteFailure = useCallback(
+    async (checkId: string, failureId: string) => {
+      setAudit(prev => ({
+        ...prev,
+        checks: prev.checks.map(c => {
+          if (c.id !== checkId) return c;
+          const failures = (c.failures ?? []).filter(f => f.id !== failureId);
+          return { ...c, failures, status: failures.length === 0 ? 'not-tested' : c.status };
+        }),
+      }));
+      try {
+        await fetch(
+          `/api/reports/${reportId}/pages/${pageId}/manual-audit/checks/${checkId}/failures/${failureId}`,
+          { method: 'DELETE' },
+        );
+      } catch (err) {
+        console.error('Failed to delete failure:', err);
+      }
+    },
+    [reportId, pageId],
+  );
+
+  const toggleComplete = useCallback(
+    async (completed: boolean) => {
+      setAudit(prev => ({
+        ...prev,
+        completed,
+        completedAt: completed ? new Date().toISOString() : undefined,
+        lastUpdated: new Date().toISOString(),
+      }));
+
+      try {
+        await fetch(`/api/reports/${reportId}/pages/${pageId}/manual-audit/complete`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed }),
+        });
+      } catch (err) {
+        console.error('Failed to toggle audit completion:', err);
+      }
+    },
+    [reportId, pageId],
+  );
+
+  return { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes, toggleComplete, addFailure, updateFailure, deleteFailure };
 }

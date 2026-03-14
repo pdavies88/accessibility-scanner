@@ -19,7 +19,7 @@ export function PageWindow() {
 
   const page = report?.results.find(r => r.id === pageId) ?? null;
 
-  const { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes } =
+  const { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes, toggleComplete, addFailure, updateFailure, deleteFailure } =
     useManualAudit(id ?? '', pageId ?? '', page?.manualAudit);
 
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -71,10 +71,14 @@ export function PageWindow() {
   const manualFailCount = audit.checks.filter(c => c.status === 'fail').length;
   const manualNotTestedCount = audit.checks.filter(c => c.status === 'not-tested').length;
 
+  const isAuditComplete = audit.completed === true;
+
   const manualTabLabel =
-    manualFailCount > 0
-      ? `Manual Audit (${manualFailCount} fail / ${manualNotTestedCount} not tested)`
-      : `Manual Audit (${audit.checks.length - manualNotTestedCount} checked)`;
+    isAuditComplete
+      ? `Manual Audit ✓`
+      : manualFailCount > 0
+        ? `Manual Audit (${manualFailCount} fail / ${manualNotTestedCount} not tested)`
+        : `Manual Audit (${audit.checks.length - manualNotTestedCount} checked)`;
 
   return (
     <div className="container mx-auto p-6 space-y-6 text-base">
@@ -108,7 +112,7 @@ export function PageWindow() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="border-b w-full justify-start rounded-none pb-0 mb-4">
+        <TabsList className="w-full justify-start rounded-none pb-0 mb-4">
           <TabsTrigger value="automated">
             Automated Issues ({page.violations.length})
           </TabsTrigger>
@@ -280,10 +284,13 @@ export function PageWindow() {
             audit={audit}
             onStatusChange={updateCheck}
             onNotesChange={updateNotes}
-            onEvidenceChange={updateEvidence}
             onAddCustomCheck={addCustomCheck}
             onDeleteCustomCheck={deleteCustomCheck}
             onAuditorNotesChange={updateAuditorNotes}
+            onToggleComplete={toggleComplete}
+            onAddFailure={addFailure}
+            onUpdateFailure={updateFailure}
+            onDeleteFailure={deleteFailure}
           />
         </TabsContent>
       </Tabs>

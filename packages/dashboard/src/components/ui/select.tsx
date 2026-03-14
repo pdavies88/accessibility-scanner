@@ -170,7 +170,9 @@ export const SelectItem = React.forwardRef<
       aria-selected={selected}
       className={cn(
         "px-2 py-1 cursor-pointer",
-        selected ? "bg-primary text-primary-foreground" : "hover:bg-accent",
+        selected
+          ? "bg-primary text-primary-foreground [&_*]:!text-primary-foreground"
+          : "hover:bg-accent hover:text-accent-foreground [&:hover_*]:!text-accent-foreground",
         className
       )}
       onClick={() => {

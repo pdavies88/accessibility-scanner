@@ -60,6 +60,11 @@ export function ReportDetail() {
     0,
   );
 
+  const auditedCount = report.results.filter(r => r.manualAudit?.completed).length;
+  const auditCoveragePct = report.summary.totalPages > 0
+    ? Math.round((auditedCount / report.summary.totalPages) * 100)
+    : 0;
+
   const impactData = Object.entries(report.summary.violationsByImpact || {}).map(
     ([impact, count]) => ({ impact, count })
   );
@@ -202,7 +207,32 @@ export function ReportDetail() {
               />
             </CardContent>
           </Card>
-          
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Manual Audit Coverage</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {auditedCount} of {report.summary.totalPages} pages audited
+                </span>
+                <span className="font-semibold">{auditCoveragePct}%</span>
+              </div>
+              <Progress value={auditCoveragePct} aria-label={`${auditCoveragePct}% of pages manually audited`} />
+              {auditedCount < report.summary.totalPages && (
+                <p className="text-xs text-muted-foreground">
+                  {report.summary.totalPages - auditedCount} pages still need a manual audit. Open each page's detail view to complete it.
+                </p>
+              )}
+              {auditedCount === report.summary.totalPages && report.summary.totalPages > 0 && (
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  All pages have been manually audited.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Top Violation Types</CardTitle>

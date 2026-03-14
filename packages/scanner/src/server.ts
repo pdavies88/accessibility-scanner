@@ -9,7 +9,7 @@ import { DatabaseService } from './database.js';
 import { Reporter } from './exporter.js';
 import { SitemapScanner } from './scanner.js';
 import { crawlSite } from './crawler.js';
-import { createDefaultChecks, ManualAudit, ManualAuditStatus, ManualCheckResult } from '@accessibility-scanner/shared';
+import { createDefaultChecks, ManualAudit, ManualAuditStatus, ManualCheckResult, ManualFailureInstance } from '@accessibility-scanner/shared';
 
 const app = express();
 const db = new DatabaseService();
@@ -219,6 +219,30 @@ app.delete('/api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId', 
   }
 });
 
+// PATCH /api/reports/:reportId/pages/:pageId/manual-audit/complete
+app.patch('/api/reports/:reportId/pages/:pageId/manual-audit/complete', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page) return res.status(404).json({ error: 'Page not found' });
+
+    if (!page.manualAudit) page.manualAudit = initManualAudit();
+
+    const { completed } = req.body as { completed: boolean };
+    page.manualAudit.completed = completed;
+    page.manualAudit.completedAt = completed ? new Date().toISOString() : undefined;
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.json({ manualAudit: page.manualAudit });
+  } catch (err) {
+    console.error('Audit complete toggle error:', err);
+    return res.status(500).json({ error: 'Failed to update audit completion' });
+  }
+});
+
 // PATCH /api/reports/:reportId/pages/:pageId/manual-audit
 app.patch('/api/reports/:reportId/pages/:pageId/manual-audit', async (req, res) => {
   try {
@@ -239,6 +263,98 @@ app.patch('/api/reports/:reportId/pages/:pageId/manual-audit', async (req, res) 
   } catch (err) {
     console.error('Auditor notes update error:', err);
     return res.status(500).json({ error: 'Failed to update auditor notes' });
+  }
+});
+
+// POST /api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId/failures
+app.post('/api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId/failures', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page) return res.status(404).json({ error: 'Page not found' });
+
+    if (!page.manualAudit) page.manualAudit = initManualAudit();
+
+    const check = page.manualAudit.checks.find(c => c.id === req.params.checkId);
+    if (!check) return res.status(404).json({ error: 'Check not found' });
+
+    const failure: ManualFailureInstance = {
+      id: randomUUID(),
+      notes: req.body.notes,
+      codeSnippet: req.body.codeSnippet,
+      screenshotDataUrl: req.body.screenshotDataUrl,
+      createdAt: new Date().toISOString(),
+    };
+    if (!check.failures) check.failures = [];
+    check.failures.push(failure);
+    // Auto-set check status to fail when a failure is recorded
+    check.status = 'fail';
+    check.updatedAt = new Date().toISOString();
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.status(201).json({ manualAudit: page.manualAudit });
+  } catch (err) {
+    console.error('Add failure instance error:', err);
+    return res.status(500).json({ error: 'Failed to add failure instance' });
+  }
+});
+
+// PATCH /api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId/failures/:failureId
+app.patch('/api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId/failures/:failureId', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page || !page.manualAudit) return res.status(404).json({ error: 'Page or audit not found' });
+
+    const check = page.manualAudit.checks.find(c => c.id === req.params.checkId);
+    if (!check) return res.status(404).json({ error: 'Check not found' });
+
+    const failure = (check.failures ?? []).find(f => f.id === req.params.failureId);
+    if (!failure) return res.status(404).json({ error: 'Failure instance not found' });
+
+    const { scope, notes, codeSnippet, screenshotDataUrl } = req.body;
+    if (scope !== undefined) failure.scope = scope;
+    if (notes !== undefined) failure.notes = notes;
+    if (codeSnippet !== undefined) failure.codeSnippet = codeSnippet;
+    if (screenshotDataUrl !== undefined) failure.screenshotDataUrl = screenshotDataUrl;
+    check.updatedAt = new Date().toISOString();
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.json({ manualAudit: page.manualAudit });
+  } catch (err) {
+    console.error('Update failure instance error:', err);
+    return res.status(500).json({ error: 'Failed to update failure instance' });
+  }
+});
+
+// DELETE /api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId/failures/:failureId
+app.delete('/api/reports/:reportId/pages/:pageId/manual-audit/checks/:checkId/failures/:failureId', async (req, res) => {
+  try {
+    const report = await db.getReport(req.params.reportId);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+
+    const page = report.results.find(r => r.id === req.params.pageId);
+    if (!page || !page.manualAudit) return res.status(404).json({ error: 'Page or audit not found' });
+
+    const check = page.manualAudit.checks.find(c => c.id === req.params.checkId);
+    if (!check) return res.status(404).json({ error: 'Check not found' });
+
+    check.failures = (check.failures ?? []).filter(f => f.id !== req.params.failureId);
+    if (check.failures.length === 0) check.status = 'not-tested';
+    check.updatedAt = new Date().toISOString();
+    page.manualAudit.lastUpdated = new Date().toISOString();
+
+    await db.updateReport(report);
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error('Delete failure instance error:', err);
+    return res.status(500).json({ error: 'Failed to delete failure instance' });
   }
 });
 

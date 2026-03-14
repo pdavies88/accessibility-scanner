@@ -3,6 +3,8 @@ import {
   ManualAudit,
   ManualAuditStatus,
   ManualCheckResult,
+  ManualFailureInstance,
+  FailureScope,
   PREDEFINED_CHECKS,
   CATEGORY_ORDER,
   CATEGORY_DESCRIPTIONS,
@@ -37,6 +39,8 @@ import {
   Upload,
   Clipboard,
   X,
+  CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -75,6 +79,22 @@ const LEVEL_COLORS: Record<string, string> = {
   A:   'bg-indigo-100  text-indigo-800  border-indigo-200',
   AA:  'bg-violet-100  text-violet-800  border-violet-200',
   AAA: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
+};
+
+// ---------------------------------------------------------------------------
+// Failure scope
+// ---------------------------------------------------------------------------
+
+const SCOPE_OPTIONS: { value: FailureScope; label: string }[] = [
+  { value: 'global',        label: 'Global' },
+  { value: 'common',        label: 'Common' },
+  { value: 'page-specific', label: 'Page Specific' },
+];
+
+const SCOPE_COLORS: Record<FailureScope, string> = {
+  'global':        'bg-red-100   text-red-800   border-red-200',
+  'common':        'bg-amber-100 text-amber-800 border-amber-200',
+  'page-specific': 'bg-sky-100   text-sky-800   border-sky-200',
 };
 
 // ---------------------------------------------------------------------------
@@ -170,8 +190,8 @@ const STATUS_LABELS: Record<ManualAuditStatus, string> = {
 };
 
 const STATUS_COLORS: Record<ManualAuditStatus, string> = {
-  pass:         'text-green-600',
-  fail:         'text-red-600',
+  pass:         'text-green-400',
+  fail:         'text-red-400',
   na:           'text-muted-foreground',
   'not-tested': 'text-muted-foreground',
 };
@@ -294,52 +314,41 @@ function StatusSelect({
 }
 
 // ---------------------------------------------------------------------------
-// CheckRow — a single predefined WCAG check row
+// FailureInstanceItem — one recorded failure for a check
 // ---------------------------------------------------------------------------
 
-function CheckRow({
-  check,
-  showMeta,
-  onStatusChange,
-  onNotesChange,
-  onEvidenceChange,
-  onLevelClick,
-  onCategoryClick,
+function FailureInstanceItem({
+  index,
+  failure,
+  onUpdate,
+  onDelete,
 }: {
-  check: ManualCheckResult;
-  /** show level + category badges (used when the group doesn't already convey this) */
-  showMeta?: boolean;
-  onStatusChange: (status: ManualAuditStatus) => void;
-  onNotesChange: (notes: string) => void;
-  onEvidenceChange: (codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
-  onLevelClick?: (level: 'A' | 'AA' | 'AAA') => void;
-  onCategoryClick?: (category: string) => void;
+  index: number;
+  failure: ManualFailureInstance;
+  onUpdate: (data: Partial<Pick<ManualFailureInstance, 'scope' | 'notes' | 'codeSnippet' | 'screenshotDataUrl'>>) => void;
+  onDelete: () => void;
 }) {
-  const [localNotes, setLocalNotes] = useState(check.notes ?? '');
-  const [showQuestions, setShowQuestions] = useState(false);
-  const [showEvidence, setShowEvidence] = useState(
-    !!(check.codeSnippet || check.screenshotDataUrl),
-  );
-  const [localCode, setLocalCode] = useState(check.codeSnippet ?? '');
-  const [screenshot, setScreenshot] = useState<string | undefined>(check.screenshotDataUrl);
+  const [localNotes, setLocalNotes] = useState(failure.notes ?? '');
+  const [localCode, setLocalCode] = useState(failure.codeSnippet ?? '');
+  const [screenshot, setScreenshot] = useState<string | undefined>(failure.screenshotDataUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const meta = check.wcagCriterion ? PREDEFINED_MAP[check.wcagCriterion] : undefined;
-  const questions = meta?.questions ?? [];
+
+  function commitNotes(value: string) {
+    if (value !== (failure.notes ?? '')) onUpdate({ notes: value || undefined });
+  }
 
   function commitCode(value: string) {
-    if (value !== (check.codeSnippet ?? '')) {
-      onEvidenceChange(value || undefined, screenshot);
-    }
+    if (value !== (failure.codeSnippet ?? '')) onUpdate({ codeSnippet: value || undefined, screenshotDataUrl: screenshot });
   }
 
   function applyScreenshot(dataUrl: string) {
     setScreenshot(dataUrl);
-    onEvidenceChange(localCode || undefined, dataUrl);
+    onUpdate({ codeSnippet: localCode || undefined, screenshotDataUrl: dataUrl });
   }
 
   function removeScreenshot() {
     setScreenshot(undefined);
-    onEvidenceChange(localCode || undefined, undefined);
+    onUpdate({ codeSnippet: localCode || undefined, screenshotDataUrl: undefined });
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -347,14 +356,13 @@ function CheckRow({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      const result = ev.target?.result;
-      if (typeof result === 'string') applyScreenshot(result);
+      if (typeof ev.target?.result === 'string') applyScreenshot(ev.target.result);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
   }
 
-  async function handlePasteFromClipboard() {
+  async function handlePaste() {
     try {
       const items = await navigator.clipboard.read();
       for (const item of items) {
@@ -363,17 +371,131 @@ function CheckRow({
           const blob = await item.getType(imageType);
           const reader = new FileReader();
           reader.onload = ev => {
-            const result = ev.target?.result;
-            if (typeof result === 'string') applyScreenshot(result);
+            if (typeof ev.target?.result === 'string') applyScreenshot(ev.target.result);
           };
           reader.readAsDataURL(blob);
           return;
         }
       }
-    } catch {
-      // Clipboard API not available or denied — silently ignore
-    }
+    } catch { /* clipboard unavailable */ }
   }
+
+  return (
+    <div className="rounded border border-dashed border-border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-xs font-medium text-muted-foreground mr-1">Instance {index}</span>
+          {SCOPE_OPTIONS.map(opt => {
+            const active = failure.scope === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onUpdate({ scope: active ? undefined : opt.value })}
+                aria-pressed={active}
+                className={cn(
+                  'inline-flex items-center rounded border text-xs h-5 px-1.5 py-0 font-medium transition-opacity',
+                  active
+                    ? SCOPE_COLORS[opt.value]
+                    : 'bg-transparent text-muted-foreground border-dashed border-muted-foreground/30 hover:border-muted-foreground/60',
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label={`Delete failure instance ${index}`}
+          className="text-muted-foreground hover:text-destructive transition-colors rounded shrink-0"
+        >
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Describe what failed…"
+        value={localNotes}
+        onChange={e => setLocalNotes(e.target.value)}
+        onBlur={() => commitNotes(localNotes)}
+        className="w-full text-sm border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50"
+      />
+
+      <div className="space-y-3 pl-1">
+        <div className="space-y-1">
+          <label className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <Code2 className="h-3 w-3" aria-hidden="true" /> Code snippet
+          </label>
+          <textarea
+            value={localCode}
+            onChange={e => setLocalCode(e.target.value)}
+            onBlur={() => commitCode(localCode)}
+            placeholder="Paste relevant HTML or code here…"
+            rows={3}
+            spellCheck={false}
+            className="w-full font-mono text-xs rounded border border-border bg-muted/40 px-2 py-1.5 resize-y focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <ImageIcon className="h-3 w-3" aria-hidden="true" /> Screenshot
+          </span>
+          {screenshot ? (
+            <div className="relative inline-block">
+              <img src={screenshot} alt="Screenshot of failure" className="max-w-full max-h-48 rounded border border-border object-contain" />
+              <button type="button" onClick={removeScreenshot} aria-label="Remove screenshot" className="absolute -top-1.5 -right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-transparent">
+                <span aria-hidden="true" className="h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80">
+                  <X className="h-3 w-3" aria-hidden="true" />
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-3 w-3" /> Upload
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handlePaste}>
+                <Clipboard className="h-3 w-3" /> Paste
+              </Button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="sr-only" aria-hidden="true" tabIndex={-1} onChange={handleFileChange} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CheckRow — a single predefined WCAG check row
+// ---------------------------------------------------------------------------
+
+function CheckRow({
+  check,
+  showMeta,
+  onStatusChange,
+  onLevelClick,
+  onCategoryClick,
+  onAddFailure,
+  onUpdateFailure,
+  onDeleteFailure,
+}: {
+  check: ManualCheckResult;
+  /** show level + category badges (used when the group doesn't already convey this) */
+  showMeta?: boolean;
+  onStatusChange: (status: ManualAuditStatus) => void;
+  onLevelClick?: (level: 'A' | 'AA' | 'AAA') => void;
+  onCategoryClick?: (category: string) => void;
+  onAddFailure: () => void;
+  onUpdateFailure: (failureId: string, data: Partial<Pick<ManualFailureInstance, 'scope' | 'notes' | 'codeSnippet' | 'screenshotDataUrl'>>) => void;
+  onDeleteFailure: (failureId: string) => void;
+}) {
+  const [showQuestions, setShowQuestions] = useState(false);
+  const meta = check.wcagCriterion ? PREDEFINED_MAP[check.wcagCriterion] : undefined;
+  const questions = meta?.questions ?? [];
 
   return (
     <div className="border-b last:border-b-0 py-3 px-4">
@@ -458,116 +580,28 @@ function CheckRow({
             </div>
           )}
 
-          {/* Evidence toggle */}
-          <button
-            type="button"
-            onClick={() => setShowEvidence(v => !v)}
-            aria-expanded={showEvidence}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
-          >
-            <ChevronDown
-              className={cn('h-3 w-3 transition-transform', showEvidence && 'rotate-180')}
-              aria-hidden="true"
-            />
-            Evidence
-            {(check.codeSnippet || check.screenshotDataUrl) && (
-              <span className="ml-1 text-xs text-primary font-medium">(attached)</span>
-            )}
-          </button>
-
-          {/* Evidence panel */}
-          {showEvidence && (
-            <div className="mt-2 space-y-3 pl-1">
-              {/* Code snippet */}
-              <div className="space-y-1">
-                <label className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                  <Code2 className="h-3 w-3" aria-hidden="true" />
-                  Code snippet
-                </label>
-                <textarea
-                  value={localCode}
-                  onChange={e => setLocalCode(e.target.value)}
-                  onBlur={() => commitCode(localCode)}
-                  placeholder="Paste relevant HTML or code here…"
-                  rows={3}
-                  spellCheck={false}
-                  className="w-full font-mono text-xs rounded border border-border bg-muted/40 px-2 py-1.5 resize-y focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+          {/* Failure instances */}
+          {(check.failures ?? []).length > 0 && (
+            <div className="mt-3 space-y-2">
+              {check.failures!.map((failure, i) => (
+                <FailureInstanceItem
+                  key={failure.id}
+                  index={i + 1}
+                  failure={failure}
+                  onUpdate={data => onUpdateFailure(failure.id, data)}
+                  onDelete={() => onDeleteFailure(failure.id)}
                 />
-              </div>
-
-              {/* Screenshot */}
-              <div className="space-y-1.5">
-                <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                  <ImageIcon className="h-3 w-3" aria-hidden="true" />
-                  Screenshot
-                </span>
-                {screenshot ? (
-                  <div className="relative inline-block">
-                    <img
-                      src={screenshot}
-                      alt="Screenshot of affected area"
-                      className="max-w-full max-h-48 rounded border border-border object-contain"
-                    />
-                    {/* Touch target is 44×44px via padding; visual indicator stays small */}
-                    <button
-                      type="button"
-                      onClick={removeScreenshot}
-                      aria-label="Remove screenshot"
-                      className="absolute -top-1.5 -right-1.5 h-11 w-11 flex items-center justify-center rounded-full bg-transparent"
-                    >
-                      <span aria-hidden="true" className="h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80">
-                        <X className="h-3 w-3" aria-hidden="true" />
-                      </span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="h-3 w-3" />
-                      Upload
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      onClick={handlePasteFromClipboard}
-                    >
-                      <Clipboard className="h-3 w-3" />
-                      Paste from clipboard
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      aria-hidden="true"
-                      tabIndex={-1}
-                      onChange={handleFileChange}
-                    />
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
           )}
-
-          {/* Notes */}
-          <input
-            type="text"
-            placeholder="Add notes…"
-            value={localNotes}
-            onChange={e => setLocalNotes(e.target.value)}
-            onBlur={() => {
-              if (localNotes !== (check.notes ?? '')) onNotesChange(localNotes);
-            }}
-            className="w-full text-sm border-0 border-b border-dashed border-muted-foreground/30 bg-transparent px-0 py-0.5 mt-2 focus:outline-none focus:border-muted-foreground placeholder:text-muted-foreground/50"
-          />
+          <button
+            type="button"
+            onClick={onAddFailure}
+            className="inline-flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
+          >
+            <Plus className="h-3 w-3" aria-hidden="true" />
+            Add failure instance
+          </button>
         </div>
 
         <div className="shrink-0">
@@ -655,18 +689,22 @@ function CheckGroupSection({
   group,
   onStatusChange,
   onNotesChange,
-  onEvidenceChange,
   onDeleteCustomCheck,
   onLevelClick,
   onCategoryClick,
+  onAddFailure,
+  onUpdateFailure,
+  onDeleteFailure,
 }: {
   group: CheckGroup;
   onStatusChange: (checkId: string, status: ManualAuditStatus) => void;
   onNotesChange: (checkId: string, notes: string) => void;
-  onEvidenceChange: (checkId: string, codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
   onDeleteCustomCheck: (checkId: string) => void;
   onLevelClick?: (level: 'A' | 'AA' | 'AAA') => void;
   onCategoryClick?: (category: string) => void;
+  onAddFailure: (checkId: string) => void;
+  onUpdateFailure: (checkId: string, failureId: string, data: Partial<Pick<ManualFailureInstance, 'scope' | 'notes' | 'codeSnippet' | 'screenshotDataUrl'>>) => void;
+  onDeleteFailure: (checkId: string, failureId: string) => void;
 }) {
   const headingId = `group-${group.id}`;
   const [collapsed, setCollapsed] = useState(true);
@@ -732,10 +770,11 @@ function CheckGroupSection({
                   check={check}
                   showMeta
                   onStatusChange={status => onStatusChange(check.id, status)}
-                  onNotesChange={notes => onNotesChange(check.id, notes)}
-                  onEvidenceChange={(code, img) => onEvidenceChange(check.id, code, img)}
                   onLevelClick={onLevelClick}
                   onCategoryClick={onCategoryClick}
+                  onAddFailure={() => onAddFailure(check.id)}
+                  onUpdateFailure={(fid, data) => onUpdateFailure(check.id, fid, data)}
+                  onDeleteFailure={fid => onDeleteFailure(check.id, fid)}
                 />
               </div>
             ),
@@ -749,10 +788,11 @@ function CheckGroupSection({
               check={check}
               showMeta
               onStatusChange={status => onStatusChange(check.id, status)}
-              onNotesChange={notes => onNotesChange(check.id, notes)}
-              onEvidenceChange={(code, img) => onEvidenceChange(check.id, code, img)}
               onLevelClick={onLevelClick}
               onCategoryClick={onCategoryClick}
+              onAddFailure={() => onAddFailure(check.id)}
+              onUpdateFailure={(fid, data) => onUpdateFailure(check.id, fid, data)}
+              onDeleteFailure={fid => onDeleteFailure(check.id, fid)}
             />
           ))}
         </div>
@@ -906,7 +946,6 @@ interface ManualAuditTabProps {
   audit: ManualAudit;
   onStatusChange: (checkId: string, status: ManualAuditStatus) => void;
   onNotesChange: (checkId: string, notes: string) => void;
-  onEvidenceChange: (checkId: string, codeSnippet: string | undefined, screenshotDataUrl: string | undefined) => void;
   onAddCustomCheck: (data: {
     title: string;
     description?: string;
@@ -916,22 +955,31 @@ interface ManualAuditTabProps {
   }) => void;
   onDeleteCustomCheck: (checkId: string) => void;
   onAuditorNotesChange: (notes: string) => void;
+  onToggleComplete?: (completed: boolean) => void;
+  onAddFailure: (checkId: string) => void;
+  onUpdateFailure: (checkId: string, failureId: string, data: Partial<Pick<ManualFailureInstance, 'scope' | 'notes' | 'codeSnippet' | 'screenshotDataUrl'>>) => void;
+  onDeleteFailure: (checkId: string, failureId: string) => void;
 }
 
 export function ManualAuditTab({
   audit,
   onStatusChange,
   onNotesChange,
-  onEvidenceChange,
   onAddCustomCheck,
   onDeleteCustomCheck,
   onAuditorNotesChange,
+  onToggleComplete,
+  onAddFailure,
+  onUpdateFailure,
+  onDeleteFailure,
 }: ManualAuditTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('wcag');
   const [levelFilter, setLevelFilter] = useState<LevelFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [auditorNotes, setAuditorNotes] = useState(audit.auditorNotes ?? '');
+  const markCompleteRef = useRef<HTMLButtonElement>(null);
+  const reopenRef = useRef<HTMLButtonElement>(null);
 
   function handleLevelClick(level: 'A' | 'AA' | 'AAA') {
     setLevelFilter(prev => prev === level ? 'all' : level);
@@ -965,8 +1013,38 @@ export function ManualAuditTab({
   const checked = total - counts['not-tested'];
   const progressPct = total > 0 ? Math.round((checked / total) * 100) : 0;
 
+  const isCompleted = audit.completed === true;
+
   return (
     <div className="space-y-6">
+      {/* Completion banner */}
+      {isCompleted && (
+        <div className="flex items-center justify-between gap-3 rounded border border-green-600/40 bg-green-600/10 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>
+              Audit marked complete
+              {audit.completedAt && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  {new Date(audit.completedAt).toLocaleString()}
+                </span>
+              )}
+            </span>
+          </div>
+          {onToggleComplete && (
+            <button
+              ref={reopenRef}
+              type="button"
+              onClick={() => { onToggleComplete(false); setTimeout(() => markCompleteRef.current?.focus(), 0); }}
+              className="inline-flex items-center gap-1.5 rounded text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+              Re-open
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Progress panel */}
       <div className="border rounded p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
@@ -979,11 +1057,25 @@ export function ManualAuditTab({
         </div>
         <Progress value={progressPct} aria-label={`${progressPct}% of checks completed`} />
         <div className="flex flex-wrap gap-3 text-xs">
-          <span className="text-green-600">● {counts.pass} Pass</span>
-          <span className="text-red-600">● {counts.fail} Fail</span>
+          <span className="text-green-400">● {counts.pass} Pass</span>
+          <span className="text-red-400">● {counts.fail} Fail</span>
           <span className="text-muted-foreground">● {counts.na} N/A</span>
           <span className="text-muted-foreground">● {counts['not-tested']} Not Tested</span>
         </div>
+        {onToggleComplete && !isCompleted && (
+          <div className="pt-1">
+            <Button
+              ref={markCompleteRef}
+              size="sm"
+              variant="outline"
+              onClick={() => { onToggleComplete(true); setTimeout(() => reopenRef.current?.focus(), 0); }}
+              className="border-green-600/50 text-green-700 hover:bg-green-600/10 hover:text-green-700 dark:text-green-400"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+              Mark Audit Complete
+            </Button>
+          </div>
+        )}
         <div className="space-y-1">
           <label htmlFor="auditor-notes" className="text-xs font-medium text-muted-foreground">
             Auditor Notes
@@ -1041,10 +1133,12 @@ export function ManualAuditTab({
           group={group}
           onStatusChange={onStatusChange}
           onNotesChange={onNotesChange}
-          onEvidenceChange={onEvidenceChange}
           onDeleteCustomCheck={onDeleteCustomCheck}
           onLevelClick={handleLevelClick}
           onCategoryClick={handleCategoryClick}
+          onAddFailure={onAddFailure}
+          onUpdateFailure={onUpdateFailure}
+          onDeleteFailure={onDeleteFailure}
         />
       ))}
 

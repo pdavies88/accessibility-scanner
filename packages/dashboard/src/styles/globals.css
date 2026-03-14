@@ -102,14 +102,14 @@
 
   a, button { cursor: pointer; }
 
-  /* WCAG 2.5.5 AAA — minimum 44×44 px target size for all interactive controls */
+  /* WCAG 2.5.8 AA — minimum 24×24 px target size for all interactive controls */
   button,
   [role="button"],
   input[type="button"],
   input[type="submit"],
   input[type="reset"] {
-    min-height: 2.75rem; /* 44px */
-    min-width:  2.75rem; /* 44px */
+    min-height: 1.5rem; /* 24px */
+    min-width:  1.5rem; /* 24px */
   }
 }
 
