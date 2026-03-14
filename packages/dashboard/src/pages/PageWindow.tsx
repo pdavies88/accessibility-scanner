@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { useReport } from '@/hooks/useReport';
 import { useManualAudit } from '@/hooks/useManualAudit';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,8 @@ export function PageWindow() {
     useManualAudit(id ?? '', pageId ?? '', page?.manualAudit);
 
   const [activeTab, setActiveTab] = useState('automated');
+  const [impactFilter, setImpactFilter] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
 
   useEffect(() => {
     if (page) {
@@ -105,67 +108,155 @@ export function PageWindow() {
         </TabsList>
 
         <TabsContent value="automated">
-          {page.violations.length > 0 ? (
-            <div className="border rounded overflow-x-auto">
-              <Table aria-label={`Violations found on ${page.url}`}>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Violation</TableHead>
-                    <TableHead>Impact</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>WCAG Criteria</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Summary</TableHead>
-                    <TableHead>HTML</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {page.violations.map((v, idx) => {
-                    const nodes = v.nodes.length
-                      ? v.nodes
-                      : [{ html: '', target: [], failureSummary: '' }];
-                    return nodes.map((n, nidx) => (
-                      <TableRow key={`${v.id}-${idx}-${nidx}`}>
-                        {nidx === 0 && (
-                          <>
-                            <TableCell rowSpan={nodes.length} className="min-w-[180px]">
-                              <ExternalLink href={v.helpUrl} className="font-medium">
-                                {[...wcagCriteria(v.tags), v.help].filter(Boolean).join(' — ')}
-                              </ExternalLink>
-                            </TableCell>
-                            <TableCell rowSpan={nodes.length}>
-                              <Badge variant={impactColors[v.impact]}>{v.impact}</Badge>
-                            </TableCell>
-                            <TableCell rowSpan={nodes.length}>
-                              {v.level
-                                ? <Badge variant="outline">{v.level}</Badge>
-                                : <span className="text-muted-foreground">—</span>}
-                            </TableCell>
-                            <TableCell rowSpan={nodes.length} className="min-w-[120px]">
-                              <div className="flex flex-wrap gap-1">
-                                {wcagCriteria(v.tags).length > 0
-                                  ? wcagCriteria(v.tags).map(c => (
-                                      <Badge key={c} variant="outline" className="font-mono text-xs">{c}</Badge>
-                                    ))
-                                  : <span className="text-muted-foreground">—</span>}
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell className="min-w-[140px] text-xs">{n.target.join(' ')}</TableCell>
-                        <TableCell className="min-w-[200px]">
-                          <p className="text-xs break-words">{n.failureSummary}</p>
-                        </TableCell>
-                        <TableCell className="min-w-[200px]">
-                          <pre className="text-xs break-words whitespace-pre-wrap">{n.html}</pre>
-                        </TableCell>
-                      </TableRow>
-                    ));
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
+          {page.violations.length > 0 ? (() => {
+            const IMPACT_ORDER = ['critical', 'serious', 'moderate', 'minor'] as const;
+            const LEVEL_ORDER = ['A', 'AA', 'AAA', 'best-practice'] as const;
+
+            const impactCounts = page.violations.reduce((acc, v) => {
+              acc[v.impact] = (acc[v.impact] ?? 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+
+            const levelCounts = page.violations.reduce((acc, v) => {
+              const key = v.level ?? 'best-practice';
+              acc[key] = (acc[key] ?? 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+
+            const filteredViolations = page.violations.filter(v => {
+              if (impactFilter && v.impact !== impactFilter) return false;
+              if (levelFilter && (v.level ?? 'best-practice') !== levelFilter) return false;
+              return true;
+            });
+
+            const segBtn = (active: boolean) => cn(
+              'px-2.5 py-1 text-xs rounded font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              active
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground cursor-pointer',
+            );
+
+            return (
+              <div className="space-y-3">
+                {/* Filter controls */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-xs text-muted-foreground mr-2 shrink-0">Impact</span>
+                    <div className="inline-flex items-center rounded-md border bg-muted p-0.5 gap-0.5" role="group" aria-label="Filter by impact">
+                      <button type="button" onClick={() => setImpactFilter('')} aria-pressed={impactFilter === ''} className={segBtn(impactFilter === '')}>
+                        All ({page.violations.length})
+                      </button>
+                      {IMPACT_ORDER.filter(i => impactCounts[i]).map(i => (
+                        <button key={i} type="button" onClick={() => setImpactFilter(f => f === i ? '' : i)} aria-pressed={impactFilter === i} className={segBtn(impactFilter === i)}>
+                          {i.charAt(0).toUpperCase() + i.slice(1)} ({impactCounts[i]})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-xs text-muted-foreground mr-2 shrink-0">Level</span>
+                    <div className="inline-flex items-center rounded-md border bg-muted p-0.5 gap-0.5" role="group" aria-label="Filter by WCAG level">
+                      <button type="button" onClick={() => setLevelFilter('')} aria-pressed={levelFilter === ''} className={segBtn(levelFilter === '')}>
+                        All
+                      </button>
+                      {LEVEL_ORDER.filter(l => levelCounts[l]).map(l => (
+                        <button key={l} type="button" onClick={() => setLevelFilter(f => f === l ? '' : l)} aria-pressed={levelFilter === l} className={segBtn(levelFilter === l)}>
+                          {l === 'best-practice' ? 'Best Practice' : l} ({levelCounts[l]})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(impactFilter || levelFilter) && (
+                    <span className="text-xs text-muted-foreground">
+                      Showing {filteredViolations.length} of {page.violations.length}
+                    </span>
+                  )}
+                </div>
+
+                {filteredViolations.length > 0 ? (
+                  <div className="border rounded overflow-x-auto">
+                    <Table aria-label={`Violations found on ${page.url}`}>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Violation</TableHead>
+                          <TableHead>Impact</TableHead>
+                          <TableHead>Level</TableHead>
+                          <TableHead>WCAG Criteria</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Summary</TableHead>
+                          <TableHead>HTML</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredViolations.map((v, idx) => {
+                          const nodes = v.nodes.length
+                            ? v.nodes
+                            : [{ html: '', target: [], failureSummary: '' }];
+                          return nodes.map((n, nidx) => (
+                            <TableRow key={`${v.id}-${idx}-${nidx}`}>
+                              {nidx === 0 && (
+                                <>
+                                  <TableCell rowSpan={nodes.length} className="min-w-[180px]">
+                                    <ExternalLink href={v.helpUrl} className="font-medium">
+                                      {[...wcagCriteria(v.tags), v.help].filter(Boolean).join(' — ')}
+                                    </ExternalLink>
+                                  </TableCell>
+                                  <TableCell rowSpan={nodes.length}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setImpactFilter(f => f === v.impact ? '' : v.impact)}
+                                      aria-label={`Filter by impact: ${v.impact}`}
+                                      className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                                    >
+                                      <Badge variant={impactColors[v.impact]} className="cursor-pointer hover:opacity-75 transition-opacity">{v.impact}</Badge>
+                                    </button>
+                                  </TableCell>
+                                  <TableCell rowSpan={nodes.length}>
+                                    {v.level ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setLevelFilter(f => f === v.level ? '' : (v.level ?? ''))}
+                                        aria-label={`Filter by level: ${v.level}`}
+                                        className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                                      >
+                                        <Badge variant="outline" className="cursor-pointer hover:opacity-75 transition-opacity">{v.level}</Badge>
+                                      </button>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell rowSpan={nodes.length} className="min-w-[120px]">
+                                    <div className="flex flex-wrap gap-1">
+                                      {wcagCriteria(v.tags).length > 0
+                                        ? wcagCriteria(v.tags).map(c => (
+                                            <Badge key={c} variant="outline" className="font-mono text-xs">{c}</Badge>
+                                          ))
+                                        : <span className="text-muted-foreground">—</span>}
+                                    </div>
+                                  </TableCell>
+                                </>
+                              )}
+                              <TableCell className="min-w-[140px] text-xs">{n.target.join(' ')}</TableCell>
+                              <TableCell className="min-w-[200px]">
+                                <p className="text-xs break-words">{n.failureSummary}</p>
+                              </TableCell>
+                              <TableCell className="min-w-[200px]">
+                                <pre className="text-xs break-words whitespace-pre-wrap">{n.html}</pre>
+                              </TableCell>
+                            </TableRow>
+                          ));
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No violations match the current filters.</p>
+                )}
+              </div>
+            );
+          })() : (
             <p className="text-muted-foreground">No violations found on this page.</p>
           )}
         </TabsContent>
