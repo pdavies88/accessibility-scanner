@@ -20,6 +20,7 @@ export function ExportData({ report }: ExportDataProps) {
   const [selectedViolation, setSelectedViolation] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('excel');
   const [tasklistName, setTasklistName] = useState('');
+  const [fileName, setFileName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (types: string[]) => {
@@ -38,7 +39,8 @@ export function ExportData({ report }: ExportDataProps) {
         });
         const csvData = await response.text();
         const blob = new Blob([csvData], { type: 'text/csv' });
-        downloadFile(blob, `accessibility-issues-${report.id}.csv`);
+        const name = fileName.trim() || `accessibility-issues-${report.id}`;
+        downloadFile(blob, `${name}.csv`);
       } else {
         // excel
         const response = await fetch(`/api/reports/${report.id}/export/excel`, {
@@ -53,7 +55,8 @@ export function ExportData({ report }: ExportDataProps) {
         });
         const arrayBuffer = await response.arrayBuffer();
         const blob = new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        downloadFile(blob, `accessibility-issues-${report.id}.xlsx`);
+        const name = fileName.trim() || `accessibility-issues-${report.id}`;
+        downloadFile(blob, `${name}.xlsx`);
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -103,6 +106,17 @@ export function ExportData({ report }: ExportDataProps) {
               placeholder="Accessibility Updates"
               value={tasklistName}
               onChange={e => setTasklistName(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="file-name">File Name</Label>
+            <Input
+              id="file-name"
+              type="text"
+              placeholder={`accessibility-issues-${report.id}`}
+              value={fileName}
+              onChange={e => setFileName(e.target.value)}
             />
           </div>
 

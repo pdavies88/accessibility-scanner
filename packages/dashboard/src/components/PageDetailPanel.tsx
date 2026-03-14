@@ -10,6 +10,17 @@ interface PageDetailPanelProps {
   onClose: () => void;
 }
 
+/** Convert axe tag like "wcag412" → "4.1.2", skip level tags like "wcag2aa" */
+function wcagCriteria(tags: string[]): string[] {
+  return tags
+    .filter(t => /^wcag\d{3,}$/.test(t))
+    .map(t => {
+      const digits = t.replace('wcag', '');
+      // Split into parts: first digit, second digit, rest
+      return `${digits[0]}.${digits[1]}.${digits.slice(2)}`;
+    });
+}
+
 const impactColors = {
   critical: 'destructive',
   serious: 'destructive',
@@ -56,6 +67,8 @@ export function PageDetailPanel({ page, onClose }: PageDetailPanelProps) {
                   <TableRow>
                     <TableHead>Violation</TableHead>
                     <TableHead>Impact</TableHead>
+                    <TableHead>Level</TableHead>
+                    <TableHead>WCAG Criteria</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Summary</TableHead>
                     <TableHead>HTML</TableHead>
@@ -70,11 +83,28 @@ export function PageDetailPanel({ page, onClose }: PageDetailPanelProps) {
                           <>
                             <TableCell rowSpan={nodes.length} className="min-w-[180px]">
                               <ExternalLink href={v.helpUrl} className="font-medium">
-                                {v.help}
+                                {[...wcagCriteria(v.tags), v.help].filter(Boolean).join(' — ')}
                               </ExternalLink>
                             </TableCell>
                             <TableCell rowSpan={nodes.length}>
                               <Badge variant={impactColors[v.impact]}>{v.impact}</Badge>
+                            </TableCell>
+                            <TableCell rowSpan={nodes.length}>
+                              {v.level ? (
+                                <Badge variant="outline">{v.level}</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell rowSpan={nodes.length} className="min-w-[120px]">
+                              <div className="flex flex-wrap gap-1">
+                                {wcagCriteria(v.tags).length > 0
+                                  ? wcagCriteria(v.tags).map(c => (
+                                      <Badge key={c} variant="outline" className="font-mono text-xs">{c}</Badge>
+                                    ))
+                                  : <span className="text-muted-foreground">—</span>
+                                }
+                              </div>
                             </TableCell>
                           </>
                         )}

@@ -57,6 +57,15 @@ export class DatabaseService {
     return data.reports.find((r) => r.id === id);
   }
 
+  async deleteReport(id: string): Promise<boolean> {
+    const data = await this.read();
+    const before = data.reports.length;
+    data.reports = data.reports.filter((r) => r.id !== id);
+    if (data.reports.length === before) return false;
+    await this.write(data);
+    return true;
+  }
+
   /**
    * Removes all stored reports. Useful when you only need a
    * single snapshot and want to start fresh between runs.
