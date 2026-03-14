@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useReport } from '@/hooks/useReport';
 import { useManualAudit } from '@/hooks/useManualAudit';
@@ -14,13 +14,15 @@ export function PageWindow() {
   const { id, pageId } = useParams<{ id: string; pageId: string }>();
   const { report, loading, error } = useReport(id);
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialTab = (location.state as { tab?: string } | null)?.tab ?? 'automated';
 
   const page = report?.results.find(r => r.id === pageId) ?? null;
 
   const { audit, updateCheck, updateNotes, updateEvidence, addCustomCheck, deleteCustomCheck, updateAuditorNotes } =
     useManualAudit(id ?? '', pageId ?? '', page?.manualAudit);
 
-  const [activeTab, setActiveTab] = useState('automated');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [impactFilter, setImpactFilter] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
   const [expandedViolations, setExpandedViolations] = useState<Set<string>>(new Set());

@@ -55,6 +55,11 @@ export function ReportDetail() {
   if (error) return <div>Error: {error}</div>;
   if (!report) return <div>Report not found</div>;
 
+  const manualFailCount = report.results.reduce(
+    (sum, r) => sum + (r.manualAudit?.checks.filter(c => c.status === 'fail').length ?? 0),
+    0,
+  );
+
   const impactData = Object.entries(report.summary.violationsByImpact || {}).map(
     ([impact, count]) => ({ impact, count })
   );
@@ -120,8 +125,13 @@ export function ReportDetail() {
           </div>
           <div className="p-6 pt-0">
             <p className="text-2xl font-bold text-red-400 underline decoration-dotted">
-              {report.summary.totalViolations}
+              {report.summary.totalViolations + manualFailCount}
             </p>
+            {manualFailCount > 0 && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {report.summary.totalViolations} automated · {manualFailCount} manual
+              </p>
+            )}
           </div>
         </button>
 
